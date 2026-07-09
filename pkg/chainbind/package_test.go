@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestVerify_RejectsUnknownSpecVersion(t *testing.T) {
+func TestCheckSpecVersion(t *testing.T) {
 	tests := []struct {
 		name    string
 		version string
