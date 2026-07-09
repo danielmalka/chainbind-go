@@ -272,6 +272,7 @@ type malformedCase struct {
 	name       string
 	mutate     func(p *chainbind.Package)
 	resignable bool
+	wantFault  chainbind.StructuralFault
 }
 
 // sealAndSign seals a package and returns it together with the issuer's
@@ -288,24 +289,26 @@ func sealAndSign(t *testing.T, audiences ...chainbind.Audience) (*chainbind.Pack
 	return p, pub, signer
 }
 
-// TestVerify_MalformedPackages_AbortAtL1_1 covers checkStructural's
-// currently-untested defensive branches (verify.go's checkStructural),
-// each of which sits on the L1.1 abort path — the first thing hostile input
-// touches.
+// TestVerify_MalformedPackages_AbortAtL1_1 covers parsePackage's
+// currently-untested defensive branches (verify.go's parsePackage), each of
+// which sits on the L1.1 abort path — the first thing hostile input
+// touches. Each case asserts the *specific* StructuralFault the mutation
+// produces, not merely that Level 1 failed — before TASK-001-16, one boolean
+// covered every one of these branches, so swapping two of their return sites
+// broke nothing the suite could see.
 //
-// Verify does NOT return a Go error for any of these: checkStructural's
-// error is consumed internally by structurallyValid and converted to a
-// boolean (verify.go). A malformed package is Verify's *answer*, not a
-// failure to process the request (architecture invariant 3) — the same
-// contract TestVerify_RejectsUnknownSpecVersion and friends already rely
-// on. So this table asserts the actual contract: Verify returns a nil
-// error, SpecVersionSupported stays true (spec_version itself was never
-// touched), and the report never reaches L1.4 — CipherHashes stays nil,
-// Level1() is false, and OK() is false. It does not assert
-// errors.Is(err, chainbind.ErrMalformedPackage) against Verify's return,
-// because Verify never surfaces that error to begin with.
+// Verify does NOT return a Go error for any of these: parsePackage's fault
+// value is written straight into report.Structural (verify.go). A malformed
+// package is Verify's *answer*, not a failure to process the request
+// (architecture invariant 3) — the same contract TestVerify_RejectsUnknownSpecVersion
+// and friends already rely on. So this table asserts the actual contract:
+// Verify returns a nil error, SpecVersionSupported stays true (spec_version
+// itself was never touched), and the report never reaches L1.4 —
+// CipherHashes stays nil, Level1() is false, and OK() is false. It does not
+// assert errors.Is(err, chainbind.ErrMalformedPackage) against Verify's
+// return, because Verify never surfaces that error to begin with.
 //
-// **Every structural case re-signs the mutated package**, and that is the
+// **Every resignable case re-signs the mutated package**, and that is the
 // whole point. Mutating the manifest invalidates the issuer signature, so an
 // un-resigned package is rejected at L1.2 whether or not L1.1 exists at all:
 // deleting the structural check from Verify leaves such a table green, and it
@@ -314,11 +317,11 @@ func sealAndSign(t *testing.T, audiences ...chainbind.Audience) (*chainbind.Pack
 // past it into L1.4 and populate CipherHashes — which the assertions below
 // catch.
 //
-// The signed_fields case is the exception, and cannot be made to isolate
-// L1.1. Emptying signature.signed_fields makes the signing view
-// unreconstructible, so it is rejected twice: by checkStructural at L1.1, and
-// by ReconstructSigningView at L1.2. No mutation separates them. It is
-// asserted here for the report shape, not as evidence about which check ran.
+// Two cases are not resignable, for two different reasons, both explained at
+// their own table entry: emptying signature.signed_fields makes the signing
+// view unreconstructible regardless of whether it runs, and corrupting
+// signature.value would simply be undone by resign overwriting it with a
+// fresh, valid encoding.
 func TestVerify_MalformedPackages_AbortAtL1_1(t *testing.T) {
 	cases := []malformedCase{
 		{
@@ -327,6 +330,7 @@ func TestVerify_MalformedPackages_AbortAtL1_1(t *testing.T) {
 				p.Signature.SignedFields = nil
 			},
 			resignable: false,
+			wantFault:  chainbind.FaultEmptySignedFields,
 		},
 		{
 			name: "empty manifest.segment_order",
@@ -334,6 +338,7 @@ func TestVerify_MalformedPackages_AbortAtL1_1(t *testing.T) {
 				p.Manifest.SegmentOrder = nil
 			},
 			resignable: true,
+			wantFault:  chainbind.FaultEmptySegmentOrder,
 		},
 		{
 			name: "manifest.segments count != segment_order count",
@@ -341,6 +346,7 @@ func TestVerify_MalformedPackages_AbortAtL1_1(t *testing.T) {
 				delete(p.Manifest.Segments, "bravo")
 			},
 			resignable: true,
+			wantFault:  chainbind.FaultSegmentCountMismatch,
 		},
 		{
 			name: "audience listed twice in segment_order",
@@ -348,6 +354,7 @@ func TestVerify_MalformedPackages_AbortAtL1_1(t *testing.T) {
 				p.Manifest.SegmentOrder = []string{"alpha", "alpha"}
 			},
 			resignable: true,
+			wantFault:  chainbind.FaultDuplicateAudience,
 		},
 		{
 			name: "audience in segment_order with no manifest.segments entry",
@@ -355,6 +362,7 @@ func TestVerify_MalformedPackages_AbortAtL1_1(t *testing.T) {
 				p.Manifest.SegmentOrder = []string{"alpha", "charlie"}
 			},
 			resignable: true,
+			wantFault:  chainbind.FaultManifestSegmentMissing,
 		},
 		{
 			name: "audience in segment_order with no segments entry",
@@ -368,6 +376,34 @@ func TestVerify_MalformedPackages_AbortAtL1_1(t *testing.T) {
 				// it has "alpha" and "bravo", never "charlie".
 			},
 			resignable: true,
+			wantFault:  chainbind.FaultSealedSegmentMissing,
+		},
+		{
+			name: "signed_fields names a bogus field",
+			mutate: func(p *chainbind.Package) {
+				p.Signature.SignedFields = append(append([]string{}, p.Signature.SignedFields[1:]...), "bogus_field")
+			},
+			// Unlike the empty-signed_fields case, resign here works fine:
+			// resign rebuilds the signing view from the fixed nine
+			// RequiredSignedFields (signview.go's BuildSigningView), never
+			// from p.Signature.SignedFields, so it does not depend on this
+			// mutation at all. Resigning proves the rejection is really
+			// about the bogus name in signed_fields, not a stale signature.
+			resignable: true,
+			wantFault:  chainbind.FaultSignedFieldsInvalid,
+		},
+		{
+			name: "signature.value is not base64url",
+			mutate: func(p *chainbind.Package) {
+				p.Signature.Value = "not valid base64url!!"
+			},
+			// Not resignable: resign overwrites signature.value with a
+			// freshly encoded (and therefore valid) signature, which would
+			// undo the only mutation this case makes. Nothing else about
+			// the package is touched, so there is nothing for a stale
+			// signature to invalidate anyway.
+			resignable: false,
+			wantFault:  chainbind.FaultSignatureUndecodable,
 		},
 	}
 
@@ -394,6 +430,9 @@ func TestVerify_MalformedPackages_AbortAtL1_1(t *testing.T) {
 			}
 			if report.CipherHashes != nil {
 				t.Fatalf("CipherHashes = %v, want nil: L1.1 must abort before L1.4 ever runs", report.CipherHashes)
+			}
+			if report.Structural != tc.wantFault {
+				t.Fatalf("Structural = %v, want %v", report.Structural, tc.wantFault)
 			}
 			if report.Level1() {
 				t.Fatal("Level1() = true for a structurally malformed package")
