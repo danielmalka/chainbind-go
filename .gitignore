@@ -1,0 +1,85 @@
+# === Segredos de negócio / harness privado ===
+# Nada abaixo vai para o repo público até liberação explícita.
+/docs/
+/.harness/
+/.claude/
+/.codex/
+/.gemini/
+/.devin/
+AGENTS.local.md
+CLAUDE.local.md
+
+# === Credenciais e ambiente ===
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+*.gpg
+*.asc
+credentials.json
+service-account*.json
+.netrc
+.npmrc
+.pypirc
+secrets.y*ml
+*.secret
+*.secrets
+
+# === Build Go ===
+/bin/
+/dist/
+/vendor/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/chainbind-go
+
+# === Cobertura / profiling ===
+coverage.out
+coverage.html
+coverage.txt
+*.prof
+*.pprof
+cpu.out
+mem.out
+
+# === Cache de ferramentas Go ===
+/.gocache/
+/.golangci-cache/
+go.work
+go.work.sum
+
+# === Terraform / infra (state contém segredos em claro) ===
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
+
+# === Editores / SO ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === Logs e temporários ===
+*.log
+tmp/
+temp/
+.cache/
