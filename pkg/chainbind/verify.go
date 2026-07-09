@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/base64"
-	"fmt"
 )
 
 // IntentResult is the outcome of Level 2 — the authority-backed check
@@ -19,6 +18,79 @@ type IntentResult struct {
 	Reason    string
 }
 
+// StructuralFault names the single reason Level 1 rejected a package before
+// the signature was checked (TECHSPEC-001 §6.5, L1.1). It is a closed set:
+// no value carries a byte from the package (architecture invariant 10).
+type StructuralFault uint8
+
+const (
+	// FaultNone means L1.1 passed: the package parsed.
+	FaultNone StructuralFault = iota
+	// FaultEmptySignedFields means signature.signed_fields was empty.
+	FaultEmptySignedFields
+	// FaultEmptySegmentOrder means manifest.segment_order was empty.
+	FaultEmptySegmentOrder
+	// FaultSegmentCountMismatch means manifest.segments had a different
+	// number of entries than manifest.segment_order.
+	FaultSegmentCountMismatch
+	// FaultDuplicateAudience means an audience was listed twice in
+	// manifest.segment_order.
+	FaultDuplicateAudience
+	// FaultManifestSegmentMissing means an audience in segment_order had no
+	// corresponding manifest.segments entry.
+	FaultManifestSegmentMissing
+	// FaultSealedSegmentMissing means an audience in segment_order had no
+	// corresponding sealed segments entry.
+	FaultSealedSegmentMissing
+	// FaultSignedFieldsInvalid means signature.signed_fields does not name
+	// the nine required fields exactly once each: a name is missing,
+	// repeated, or unrecognised.
+	FaultSignedFieldsInvalid
+	// FaultSigningViewUnbuildable means signature.signed_fields was valid
+	// but the signing view could not be canonicalized — for instance a
+	// package whose bindings.Extra shadows a core binding name, which
+	// Bindings.MarshalJSON refuses to encode.
+	//
+	// It is separate from FaultSignedFieldsInvalid because collapsing the
+	// two would make Verify say "signed_fields is invalid" about a package
+	// whose signed_fields is perfectly well formed. That is the same
+	// species of lie this type exists to stop telling.
+	FaultSigningViewUnbuildable
+	// FaultSignatureUndecodable means signature.value was not valid
+	// base64url.
+	FaultSignatureUndecodable
+)
+
+// String returns a static, constant description of f. Every branch is a
+// string literal — never a formatted package byte — so a Report is always
+// safe to render (architecture invariant 10).
+func (f StructuralFault) String() string {
+	switch f {
+	case FaultNone:
+		return "no structural fault"
+	case FaultEmptySignedFields:
+		return "signature.signed_fields is empty"
+	case FaultEmptySegmentOrder:
+		return "manifest.segment_order is empty"
+	case FaultSegmentCountMismatch:
+		return "manifest.segments count does not match segment_order count"
+	case FaultDuplicateAudience:
+		return "an audience is listed twice in segment_order"
+	case FaultManifestSegmentMissing:
+		return "an audience in segment_order has no manifest.segments entry"
+	case FaultSealedSegmentMissing:
+		return "an audience in segment_order has no sealed segments entry"
+	case FaultSignedFieldsInvalid:
+		return "signature.signed_fields does not name the required fields"
+	case FaultSigningViewUnbuildable:
+		return "the signing view could not be canonicalized"
+	case FaultSignatureUndecodable:
+		return "signature value could not be decoded"
+	default:
+		return "unknown structural fault"
+	}
+}
+
 // Report is Verify's complete answer: every check TECHSPEC-001 §6.5 defines,
 // each recorded independently so a caller can tell which one failed. A field
 // left at its zero value after an L1.1/L1.2 abort means "never evaluated",
@@ -26,6 +98,12 @@ type IntentResult struct {
 // ones, precisely so a caller can tell the difference.
 type Report struct {
 	SpecVersionSupported bool
+	// Structural is FaultNone when L1.1 (the structural parse) passed. A
+	// non-FaultNone value means every field below is unevaluated, not
+	// failed — the same contract CipherHashes == nil already carries. It is
+	// never set alongside a completed Signature check: L1.1 aborts before
+	// L1.2 runs.
+	Structural           StructuralFault
 	Signature            bool
 	AADContextConsistent bool
 	// CipherHashes is keyed by audience name. It is nil when Level 1
@@ -71,6 +149,16 @@ func (r *Report) Level1() bool {
 // rather than left at its post-abort zero value. It gates whether Level 2
 // runs at all, and is also the non-intent half of Report.OK.
 func level1Passed(r *Report) bool {
+	// Redundant for any Report Verify produces: a structural fault makes
+	// Verify return before CipherHashes is ever allocated, so the nil check
+	// below already answers. It is here for the Report a caller builds
+	// itself — every field of Report is exported — where a fault could
+	// otherwise sit beside a full set of passing checks and be ignored.
+	// Nothing on the Verify path exercises this branch; the test that pins
+	// it hand-builds a Report, and says so.
+	if r.Structural != FaultNone {
+		return false
+	}
 	if !r.SpecVersionSupported || !r.Signature || !r.AADContextConsistent || !r.SegmentsRoot {
 		return false
 	}
@@ -136,26 +224,25 @@ func Verify(ctx context.Context, p *Package, opt VerifyOptions) (*Report, error)
 	// nothing gained by checking further (architecture invariant 3). Verify
 	// never propagates these as a Go error — a malformed package is an
 	// answer (an unverified *Report), not a failure to process the
-	// request — so the checks below are boolean, not error-returning:
-	// nothing here discards an error Verify was supposed to return.
+	// request — so the checks below are boolean/enum-valued, not
+	// error-returning. The reason a package failed to parse is now
+	// reported, not discarded: report.Structural names exactly which
+	// structural check failed.
 	if !specVersionSupported(p.SpecVersion) {
 		return report, nil
 	}
 	report.SpecVersionSupported = true
 
-	if !structurallyValid(*p) {
+	view, sig, fault := parsePackage(*p)
+	if fault != FaultNone {
+		report.Structural = fault
 		return report, nil
 	}
 
-	// L1.2 — rebuild the signing view from signature.signed_fields and
-	// verify against the issuer key the caller's own trust store returns
-	// for the package's claimed iss/kid. Abort on failure.
+	// L1.2 — trust and verify. Nothing here can fail structurally: parsing
+	// already happened above.
 	pub, trusted := resolveIssuerKey(opt.IssuerKey, p.Issuer.Iss, p.Issuer.Kid)
 	if !trusted {
-		return report, nil
-	}
-	view, sig, wellFormed := signingMaterial(*p)
-	if !wellFormed {
 		return report, nil
 	}
 	if !verifyEd25519(pub, view, sig) {
@@ -181,6 +268,17 @@ func Verify(ctx context.Context, p *Package, opt VerifyOptions) (*Report, error)
 	}
 
 	// L1.5 — recomputed segments_root against the signed bindings value.
+	// SegmentsRoot can only fail on a duplicate audience in segment_order, a
+	// plain_hash missing for an audience in segment_order, or a plain_hash
+	// entry absent from segment_order (bindings.go) — and parsePackage has
+	// already rejected all three by the time this line runs: a duplicate is
+	// FaultDuplicateAudience, and every audience in segment_order is
+	// guaranteed a manifest.Segments entry (FaultManifestSegmentMissing),
+	// which is exactly what populates plainHash above, one entry per
+	// segment_order member, keyed by the same names — so plainHash's key set
+	// is always exactly segment_order's, with no member of either missing
+	// from the other. err is therefore unreachable here; this is not a
+	// second copy of L1.1's check, only its provable consequence.
 	recomputedRoot, err := SegmentsRoot(p.Manifest.SegmentOrder, plainHash)
 	report.SegmentsRoot = err == nil && recomputedRoot == p.Bindings.SegmentsRoot
 
@@ -216,60 +314,63 @@ func specVersionSupported(v string) bool {
 	return CheckSpecVersion(v) == nil
 }
 
-// structurallyValid reports whether p passes checkStructural. Boolean for
-// the same reason as specVersionSupported: a structurally malformed package
-// is a verification result, not a Go error.
-func structurallyValid(p Package) bool {
-	return checkStructural(p) == nil
-}
-
-// signingMaterial reconstructs the signing view and decodes the signature
-// value together, reporting ok=false if either step fails. A malformed
-// signed_fields list and an unparseable signature encoding are both simply
-// "the signature does not verify" from Verify's perspective — neither is a
-// distinct error class the caller needs to see.
-func signingMaterial(p Package) (view, sig []byte, ok bool) {
-	view, err := ReconstructSigningView(p)
-	if err != nil {
-		return nil, nil, false
-	}
-	sig, err = DecodeSignatureValue(p.Signature.Value)
-	if err != nil {
-		return nil, nil, false
-	}
-	return view, sig, true
-}
-
-// checkStructural is the parse half of L1.1: required sections present
-// (signature.signed_fields, a non-empty segment_order) and exactly one
-// manifest entry and one sealed segment per declared audience — no fewer,
-// no more, no duplicate.
-func checkStructural(p Package) error {
+// parsePackage is the whole of L1.1: every check that can be made on a
+// package before anything about it is trusted. Required sections present
+// (signature.signed_fields, a non-empty segment_order), exactly one manifest
+// entry and one sealed segment per declared audience — no fewer, no more, no
+// duplicate — signature.signed_fields naming a valid signing view, and
+// signature.value decoding as base64url. It returns the reconstructed
+// signing view and the decoded signature because producing them *is* the
+// parse — a package whose signed_fields cannot name a view, or whose
+// signature.value is not base64url, has failed to parse, not failed to
+// verify. fault is FaultNone on success, in which case view and sig are the
+// exact inputs L1.2 needs.
+func parsePackage(p Package) (view, sig []byte, fault StructuralFault) {
 	if len(p.Signature.SignedFields) == 0 {
-		return fmt.Errorf("%w: signature.signed_fields is empty", ErrMalformedPackage)
+		return nil, nil, FaultEmptySignedFields
 	}
 	if len(p.Manifest.SegmentOrder) == 0 {
-		return fmt.Errorf("%w: manifest.segment_order is empty", ErrMalformedPackage)
+		return nil, nil, FaultEmptySegmentOrder
 	}
 	if len(p.Manifest.Segments) != len(p.Manifest.SegmentOrder) {
-		return fmt.Errorf("%w: manifest.segments has %d entries, want %d", ErrMalformedPackage, len(p.Manifest.Segments), len(p.Manifest.SegmentOrder))
+		return nil, nil, FaultSegmentCountMismatch
 	}
 
 	seen := make(map[string]struct{}, len(p.Manifest.SegmentOrder))
 	for _, a := range p.Manifest.SegmentOrder {
 		if _, dup := seen[a]; dup {
-			return fmt.Errorf("%w: audience %q listed twice in segment_order", ErrMalformedPackage, a)
+			return nil, nil, FaultDuplicateAudience
 		}
 		seen[a] = struct{}{}
 
 		if _, ok := p.Manifest.Segments[a]; !ok {
-			return fmt.Errorf("%w: manifest.segments missing entry for audience %q", ErrMalformedPackage, a)
+			return nil, nil, FaultManifestSegmentMissing
 		}
 		if _, ok := p.Segments[a]; !ok {
-			return fmt.Errorf("%w: segments missing entry for audience %q", ErrMalformedPackage, a)
+			return nil, nil, FaultSealedSegmentMissing
 		}
 	}
-	return nil
+
+	// checkSignedFields runs first, on its own, so the two ways
+	// ReconstructSigningView can fail stay distinguishable. Asking
+	// ReconstructSigningView and blaming signed_fields for whatever it
+	// returns would misreport a package whose signed_fields is valid but
+	// whose bindings.Extra shadows a core binding name — a package the
+	// caller built in memory, since Bindings.UnmarshalJSON rejects that
+	// collision on the way in.
+	if err := checkSignedFields(p.Signature.SignedFields); err != nil {
+		return nil, nil, FaultSignedFieldsInvalid
+	}
+
+	view, err := ReconstructSigningView(p)
+	if err != nil {
+		return nil, nil, FaultSigningViewUnbuildable
+	}
+	sig, err = DecodeSignatureValue(p.Signature.Value)
+	if err != nil {
+		return nil, nil, FaultSignatureUndecodable
+	}
+	return view, sig, FaultNone
 }
 
 // resolveIssuerKey calls resolve with the package's claimed iss/kid and

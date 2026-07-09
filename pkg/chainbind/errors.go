@@ -13,7 +13,15 @@ var (
 	ErrUnsupportedSpecVersion = errors.New("chainbind: unsupported spec_version")
 
 	// ErrMalformedPackage is returned when a package fails structural
-	// validation (missing sections, mismatched segment counts, ...).
+	// validation (missing sections, mismatched segment counts, an invalid
+	// signature.signed_fields set, ...). Verify never returns this: since
+	// TASK-001-16, a structurally malformed package is reported through
+	// Report.Structural, a StructuralFault, with a nil error — the same
+	// contract every other Verify outcome follows (architecture invariant
+	// 3). This error still reaches callers who go around Verify: SegmentsRoot
+	// and checkSignedFields return it directly to their own callers, and
+	// ReconstructSigningView is exported, so a caller reconstructing a
+	// signing view directly (rather than through Verify) still sees it.
 	ErrMalformedPackage = errors.New("chainbind: malformed package")
 
 	// ErrSignatureInvalid is returned when the issuer signature does not
