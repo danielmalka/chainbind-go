@@ -1,0 +1,133 @@
+{
+    "_comment": "Ilustrativo. Valores encurtados. Gerado de verdade em examples/ quando a POC rodar. Atualizado 2026-07-09 para D-002/D-004/D-005/D-006/D-008.",
+    "spec_version": "1.0.0",
+    "profile": "agentic-checkout/v1",
+    "package_id": "pkg_20260709_0001",
+    "issued_at": "2026-07-09T12:00:00Z",
+    "issuer": {
+        "iss": "chainbind-go",
+        "kid": "issuer-signing-key-1"
+    },
+    "intent": {
+        "intent_ref": "int_01JZQ4X8K2N7",
+        "authority": "https://intent-authority.local/v1",
+        "constraints_hash": "sha256:7c1b0a44e9..."
+    },
+    "cnf": {
+        "user": {
+            "kid": "user-key-1",
+            "jkt": "NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs",
+            "method": "jwk-thumbprint"
+        },
+        "merchant": {
+            "kid": "merchant-key-1",
+            "jkt": "0iVFRAtc0Ce8Y-jaK1J_MzYbHf8lS2N2ZmA5xnCiUXk",
+            "method": "jwk-thumbprint"
+        },
+        "gateway": {
+            "kid": "gateway-key-1",
+            "jkt": "Rk9wLm2b3XoQeT1uY7hVJcNsD4gFpA8zK0iBrMxWqEs",
+            "method": "jwk-thumbprint"
+        }
+    },
+    "bindings": {
+        "segments_root": "sha256:1a4f9c02be...",
+        "intent_commitment": "ctx:sha256:f10a2287a19d...",
+        "conditional_transaction_id": "ctx:sha256:f10a2287a19d...",
+        "checkout_hash": "sha256:9f0d8d6bb3c9...",
+        "transaction_id": "txn:sha256:c47e5b81d0a2..."
+    },
+    "manifest": {
+        "schema": "chainbind-package/v1",
+        "hash_alg": "SHA-256",
+        "canonicalization": "RFC8785",
+        "segment_order": [
+            "user",
+            "merchant",
+            "gateway"
+        ],
+        "aad_context": {
+            "package_id": "pkg_20260709_0001",
+            "tenant_id": "demo-tenant",
+            "environment": "dev"
+        },
+        "segments": {
+            "user": {
+                "audience": "user",
+                "kid": "user-key-1",
+                "alg": "AES-256-GCM",
+                "wrap_alg": "ECDH-ES+A256KW",
+                "plain_hash": "sha256:aaa111...",
+                "cipher_hash": "sha256:bbb222..."
+            },
+            "merchant": {
+                "audience": "merchant",
+                "kid": "merchant-key-1",
+                "alg": "AES-256-GCM",
+                "wrap_alg": "ECDH-ES+A256KW",
+                "plain_hash": "sha256:ccc333...",
+                "cipher_hash": "sha256:ddd444..."
+            },
+            "gateway": {
+                "audience": "gateway",
+                "kid": "gateway-key-1",
+                "alg": "AES-256-GCM",
+                "wrap_alg": "ECDH-ES+A256KW",
+                "plain_hash": "sha256:eee555...",
+                "cipher_hash": "sha256:fff666..."
+            }
+        },
+        "disclosures": []
+    },
+    "segments": {
+        "user": {
+            "epk": {
+                "kty": "OKP",
+                "crv": "X25519",
+                "x": "base64url-ephemeral-pubkey-user"
+            },
+            "dek_wrapped": "base64url-wrapped-user-dek",
+            "nonce": "base64url-user-nonce",
+            "ciphertext": "base64url-user-ciphertext",
+            "tag": "base64url-user-tag"
+        },
+        "merchant": {
+            "epk": {
+                "kty": "OKP",
+                "crv": "X25519",
+                "x": "base64url-ephemeral-pubkey-merchant"
+            },
+            "dek_wrapped": "base64url-wrapped-merchant-dek",
+            "nonce": "base64url-merchant-nonce",
+            "ciphertext": "base64url-merchant-ciphertext",
+            "tag": "base64url-merchant-tag"
+        },
+        "gateway": {
+            "epk": {
+                "kty": "OKP",
+                "crv": "X25519",
+                "x": "base64url-ephemeral-pubkey-gateway"
+            },
+            "dek_wrapped": "base64url-wrapped-gateway-dek",
+            "nonce": "base64url-gateway-nonce",
+            "ciphertext": "base64url-gateway-ciphertext",
+            "tag": "base64url-gateway-tag"
+        }
+    },
+    "signature": {
+        "alg": "EdDSA",
+        "kid": "issuer-signing-key-1",
+        "signed_fields": [
+            "spec_version",
+            "profile",
+            "package_id",
+            "issued_at",
+            "issuer",
+            "intent",
+            "cnf",
+            "bindings",
+            "manifest"
+        ],
+        "value": "base64url-signature"
+    }
+}
