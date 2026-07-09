@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/base64"
+	"encoding/json"
 )
 
 // IntentResult is the outcome of Level 2 — the authority-backed check
@@ -89,6 +90,23 @@ func (f StructuralFault) String() string {
 	default:
 		return "unknown structural fault"
 	}
+}
+
+// MarshalJSON renders f as its String() text, not as its ordinal.
+//
+// encoding/json does not consult fmt.Stringer, so without this a Report
+// serialized to a client — by the HTTP shell's /v1/packages/verify, or by
+// the CLI's `verify --json` — would carry "structural": 4. Four is not a
+// documented value of anything. The ordinal is an implementation detail of
+// the iota block and may shift when a fault is inserted; the text is the
+// contract.
+//
+// There is deliberately no UnmarshalJSON. A Report is Verify's answer to a
+// caller, never an input to it: nothing in this library parses one back.
+// Adding a decoder would invite a caller to round-trip a Report and treat
+// the result as if Verify had produced it.
+func (f StructuralFault) MarshalJSON() ([]byte, error) {
+	return json.Marshal(f.String())
 }
 
 // Report is Verify's complete answer: every check TECHSPEC-001 §6.5 defines,

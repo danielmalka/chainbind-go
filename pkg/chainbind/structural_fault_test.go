@@ -3,6 +3,7 @@ package chainbind_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -175,5 +176,48 @@ func TestStructuralFault_StringIsStaticForEveryValue(t *testing.T) {
 		if strings.ContainsAny(s, "0123456789") {
 			t.Fatalf("StructuralFault(%d).String() = %q contains a digit — the numeric value leaked", uint8(f), s)
 		}
+	}
+}
+
+// TestStructuralFault_MarshalsAsText pins the JSON contract. encoding/json
+// does not consult fmt.Stringer, so without MarshalJSON a Report serialized
+// to a client carries "structural": 4 — an ordinal that is an implementation
+// detail of the iota block and shifts the day a fault is inserted. Both the
+// HTTP shell's /v1/packages/verify and the CLI's `verify --json` hand a
+// Report to someone else; both would have shipped the integer.
+func TestStructuralFault_MarshalsAsText(t *testing.T) {
+	for _, f := range []chainbind.StructuralFault{
+		chainbind.FaultNone,
+		chainbind.FaultDuplicateAudience,
+		chainbind.FaultSignatureUndecodable,
+		chainbind.StructuralFault(255),
+	} {
+		raw, err := json.Marshal(f)
+		if err != nil {
+			t.Fatalf("marshal %v: %v", f, err)
+		}
+		var got string
+		if err := json.Unmarshal(raw, &got); err != nil {
+			t.Fatalf("StructuralFault(%d) marshalled to non-string %s", uint8(f), raw)
+		}
+		if got != f.String() {
+			t.Fatalf("marshalled %q, want %q", got, f.String())
+		}
+	}
+
+	// The whole Report, as a client receives it.
+	raw, err := json.Marshal(&chainbind.Report{Structural: chainbind.FaultEmptySegmentOrder})
+	if err != nil {
+		t.Fatalf("marshal report: %v", err)
+	}
+	var rec map[string]any
+	if err := json.Unmarshal(raw, &rec); err != nil {
+		t.Fatalf("unmarshal report: %v", err)
+	}
+	if _, isNumber := rec["Structural"].(float64); isNumber {
+		t.Fatalf("Report.Structural serialized as a number: %s", raw)
+	}
+	if rec["Structural"] != chainbind.FaultEmptySegmentOrder.String() {
+		t.Fatalf("Report.Structural = %v, want %q", rec["Structural"], chainbind.FaultEmptySegmentOrder.String())
 	}
 }
