@@ -51,4 +51,10 @@ var (
 	// intent_commitment). A profile that shadows a core binding is a
 	// bug, not a preference.
 	ErrBindingCollision = errors.New("chainbind: binding name collision")
+
+	// ErrNilPackage is returned by Verify when the package pointer itself
+	// is nil — the one input Verify cannot process at all. Every other
+	// failure is reported through *Report with OK() == false, not through
+	// this error.
+	ErrNilPackage = errors.New("chainbind: verify: package is nil")
 )
