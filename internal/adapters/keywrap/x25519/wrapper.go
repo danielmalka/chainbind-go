@@ -112,6 +112,17 @@ func (Wrapper) Unwrap(_ context.Context, priv, epk, wrapped []byte) (dek []byte,
 	return dek, nil
 }
 
+// PublicKey satisfies chainbind.KeyWrapper: it derives the public half of an
+// X25519 private key. Its error names nothing about priv, not even its
+// length (architecture invariant 10).
+func (Wrapper) PublicKey(priv []byte) ([]byte, error) {
+	k, err := ecdh.X25519().NewPrivateKey(priv)
+	if err != nil {
+		return nil, ErrUnwrapFailed
+	}
+	return k.PublicKey().Bytes(), nil
+}
+
 // Thumbprint satisfies chainbind.KeyWrapper. The value is derived from the
 // same public key Wrap seals the data key to, which is what makes cnf[a].jkt
 // a confirmation rather than an issuer's claim.
