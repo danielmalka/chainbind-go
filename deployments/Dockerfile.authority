@@ -1,0 +1,12 @@
+# Multi-stage build for the mock intent authority (cmd/mock-authority).
+# alpine runtime so the compose healthcheck can wget /v1/health.
+FROM golang:1.26 AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -trimpath -o /out/mock-authority ./cmd/mock-authority
+
+FROM alpine:3.20
+COPY --from=build /out/mock-authority /usr/local/bin/mock-authority
+ENTRYPOINT ["mock-authority"]

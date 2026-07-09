@@ -1,0 +1,1 @@
+{"checkout_id":"chk_789","merchant_id":"mer_001","merchant_name":"Tech Store BR","currency":"BRL","items":[{"sku":"SKU-123","name":"Notebook Pro 14","quantity":1,"unit_price":899900},{"sku":"SKU-456","name":"Mouse Wireless","quantity":2,"unit_price":12990}],"subtotal":925880,"shipping":2500,"discount":10000,"total":918380}

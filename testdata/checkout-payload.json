@@ -1,0 +1,45 @@
+{
+  "request_context": {
+    "tenant_id": "demo-tenant",
+    "environment": "dev",
+    "request_id": "req-20260709-0001",
+    "correlation_id": "corr-20260709-0001",
+    "issued_by": "checkout-orchestrator"
+  },
+  "intent": {
+    "intent_ref": "intent:checkout-allow",
+    "authority": "http://authority:9000"
+  },
+  "subject": {
+    "user_id": "usr_123",
+    "account_id": "acc_456",
+    "name": "Joao Silva",
+    "email": "joao.silva@example.com",
+    "roles": ["role_user"],
+    "permissions": ["checkout:create", "checkout:read_own", "payment:read_own"],
+    "account_status": "active"
+  },
+  "checkout": {
+    "checkout_id": "chk_789",
+    "merchant_id": "mer_001",
+    "merchant_name": "Tech Store BR",
+    "currency": "BRL",
+    "items": [
+      { "sku": "SKU-123", "name": "Notebook Pro 14", "quantity": 1, "unit_price": 899900 },
+      { "sku": "SKU-456", "name": "Mouse Wireless", "quantity": 2, "unit_price": 12990 }
+    ],
+    "subtotal": 925880,
+    "shipping": 2500,
+    "discount": 10000,
+    "total": 918380
+  },
+  "payment": {
+    "payment_id": "pay_001",
+    "payment_method": "pix",
+    "bank_account_masked": "***1234",
+    "bank_code": "341",
+    "payment_reference": "pix-20260709-0001",
+    "transaction_status": "pending",
+    "amount": 918380
+  }
+}

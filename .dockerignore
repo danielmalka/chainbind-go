@@ -1,0 +1,23 @@
+# The compose build context is the repo root (deployments/*.Dockerfile use
+# `context: ..`). Keep everything below out of the build context: secrets and
+# private key material must never enter even a throwaway intermediate layer,
+# and the rest is dead weight the multi-stage build discards anyway.
+
+# Runtime key material written by scripts/seed-keys.sh — never in an image.
+/deployments/secrets/
+
+# Git and business-secret docs — not needed to build a binary, and gitignored
+# from the repo for the same reason.
+/.git/
+/.github/
+/docs/
+/.harness/
+/.claude/
+/.codex/
+/.gemini/
+AGENTS.local.md
+CLAUDE.local.md
+
+# Local build/test byproducts.
+coverage.out
+/examples/

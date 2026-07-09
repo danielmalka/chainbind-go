@@ -1,0 +1,1 @@
+{"user_id":"usr_123","account_id":"acc_456","name":"Joao Silva","email":"joao.silva@example.com","roles":["role_user"],"permissions":["checkout:create","checkout:read_own","payment:read_own"],"account_status":"active"}

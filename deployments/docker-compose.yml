@@ -1,0 +1,138 @@
+# chainbind POC stack (TASK-001-14). `docker compose up --build` provisions
+# Vault (dev), Keycloak (dev), the mock intent authority and the chainbind-api
+# shell, with two one-shot bootstrap services provisioning their initial state,
+# reaching a working seal->verify->open round trip with zero manual steps.
+#
+# Dev mode only, per the PRD non-goal: no TLS, no HA, no persistence. The root
+# token and admin password below are obvious throwaways for a local dev stack,
+# never production material.
+
+name: chainbind-poc
+
+services:
+  vault:
+    image: hashicorp/vault:1.18
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: root
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    command: server -dev
+    ports:
+      - "8200:8200"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1 || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev
+    environment:
+      # Both spellings: KEYCLOAK_ADMIN for <=26.0, KC_BOOTSTRAP_ADMIN_* for >=26.1.
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      # Fixed frontend URL so every issued token carries a stable `iss` that
+      # matches CHAINBIND_KEYCLOAK_ISSUER, regardless of whether the token was
+      # requested from inside the network or from the host on localhost:8080.
+      KC_HOSTNAME: http://keycloak:8080
+    ports:
+      - "8080:8080"
+
+  authority:
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile.authority
+    environment:
+      AUTHORITY_ADDR: ":9000"
+      AUTHORITY_SEED_DIR: /seed
+    volumes:
+      - ../testdata/authorizations:/seed:ro
+    ports:
+      - "9000:9000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9000/v1/health >/dev/null 2>&1 || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # One-shot: enables Vault Transit + creates the ed25519 issuer key, and
+  # generates the three recipient X25519 keypairs + audiences.json into
+  # ./secrets (bind-mounted, so the host demo/integration test can read the
+  # private halves and the issuer public key).
+  bootstrap:
+    image: alpine:3.20
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: root
+      CHAINBIND_VAULT_TRANSIT_KEY: issuer-signing-key
+      SECRETS_DIR: /secrets
+    volumes:
+      - ../scripts:/scripts:ro
+      - ./secrets:/secrets
+    command:
+      - sh
+      - -ec
+      - |
+        apk add --no-cache curl jq openssl >/dev/null
+        sh /scripts/bootstrap-vault.sh
+        sh /scripts/seed-keys.sh
+
+  # One-shot: creates the realm, client, role_issuer_admin realm role, a test
+  # user carrying it, and the audience mapper so tokens carry aud=chainbind-api.
+  # It waits internally for Keycloak to answer, so its successful completion is
+  # a stronger readiness signal than a port healthcheck (Keycloak's image ships
+  # no curl/wget to healthcheck with).
+  bootstrap-keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    depends_on:
+      - keycloak
+    environment:
+      KC_URL: http://keycloak:8080
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    entrypoint: ["/bin/bash", "/scripts/bootstrap-keycloak.sh"]
+    volumes:
+      - ../scripts:/scripts:ro
+
+  chainbind-api:
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile.api
+    depends_on:
+      vault:
+        condition: service_healthy
+      authority:
+        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
+      bootstrap-keycloak:
+        condition: service_completed_successfully
+    environment:
+      CHAINBIND_VAULT_ADDR: http://vault:8200
+      CHAINBIND_VAULT_TOKEN: root
+      CHAINBIND_VAULT_TRANSIT_KEY: issuer-signing-key
+      CHAINBIND_ISSUER_ID: did:chainbind:dev-issuer
+      CHAINBIND_INTENT_AUTHORITY_URL: http://authority:9000
+      CHAINBIND_KEYCLOAK_ISSUER: http://keycloak:8080/realms/chainbind
+      CHAINBIND_KEYCLOAK_JWKS_URL: http://keycloak:8080/realms/chainbind/protocol/openid-connect/certs
+      CHAINBIND_KEYCLOAK_AUDIENCE: chainbind-api
+      CHAINBIND_AUDIENCES_FILE: /secrets/audiences.json
+      CHAINBIND_HTTP_ADDR: ":8080"
+    volumes:
+      - ./secrets:/secrets:ro
+    ports:
+      - "8088:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ready >/dev/null 2>&1 || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 30

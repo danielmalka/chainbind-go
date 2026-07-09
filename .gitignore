@@ -83,3 +83,6 @@ desktop.ini
 tmp/
 temp/
 .cache/
+
+# === Compose runtime secrets (TASK-001-14) ===
+/deployments/secrets/

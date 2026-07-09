@@ -1,0 +1,13 @@
+# Multi-stage build for the chainbind-api shell (cmd/chainbind-api).
+# alpine runtime (not distroless) so the compose healthcheck can shell out to
+# busybox wget against /ready; the binary itself is static (CGO disabled).
+FROM golang:1.26 AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -trimpath -o /out/chainbind-api ./cmd/chainbind-api
+
+FROM alpine:3.20
+COPY --from=build /out/chainbind-api /usr/local/bin/chainbind-api
+ENTRYPOINT ["chainbind-api"]
