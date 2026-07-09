@@ -181,6 +181,13 @@ func (v *Verifier) ConstraintsHash(ctx context.Context, intentRef string) (strin
 	return hashConstraints(doc)
 }
 
+// Ping implements the HTTP shell's Prober port. The mock authority is
+// in-memory — there is no network dependency to probe — so Ping only
+// reports whether ctx is already done, and is otherwise always ready.
+func (v *Verifier) Ping(ctx context.Context) error {
+	return ctx.Err()
+}
+
 // lookup returns the immutable document pinned by intentRef. There is no
 // version selection here or anywhere: the ref is the whole key.
 func (v *Verifier) lookup(intentRef string) (constraints, error) {

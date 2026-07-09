@@ -44,6 +44,13 @@ type Config struct {
 	// Required.
 	VaultTransitKey string
 
+	// IssuerID is the identity stamped into issuer.iss on every package the
+	// shell seals. Required: the shell is the issuer (it holds the signing
+	// key), so this is the operator's own identity, and it must not be left
+	// to default to something a request could shadow. Not a secret; logged
+	// in the clear.
+	IssuerID string
+
 	// IntentAuthorityURL is the base URL of the Intent Authority the HTTP
 	// IntentVerifier adapter calls. Required: Seal fails closed without a
 	// reachable authority (D-006), so a shell that cannot even locate one
@@ -58,10 +65,25 @@ type Config struct {
 	// Required for the same reason as KeycloakIssuer.
 	KeycloakJWKSURL string
 
+	// KeycloakAudience is the expected `aud` claim on tokens the shell
+	// accepts. Required: RoleIssuerAdmin is a Keycloak *realm* role, so it
+	// rides on a token minted for any client in the realm — without an
+	// audience check a token issued to an unrelated client would still be
+	// accepted. Not a secret; logged in the clear.
+	KeycloakAudience string
+
 	// HTTPAddr is the shell's listen address. Optional: defaults to
 	// ":8080" when unset, since a demo/dev deployment has no reason to
 	// fail startup over a listen address it can reasonably default.
 	HTTPAddr string
+
+	// AudiencesFile names a JSON file seeding the audiences a seal request
+	// may address: [{"name","kid","public_key"}, ...], public_key being
+	// unpadded base64url X25519 bytes. Required. TECHSPEC-001 §10 open
+	// question 1 defaults to static seeding rather than accepting audience
+	// public keys from the seal request body, so the shell has to load
+	// them from somewhere at startup.
+	AudiencesFile string
 }
 
 // envSpec names an environment variable and the Config field it fills.
@@ -80,9 +102,12 @@ func Load() (*Config, error) {
 		{"CHAINBIND_VAULT_ADDR", &cfg.VaultAddr},
 		{"CHAINBIND_VAULT_TOKEN", &cfg.VaultToken},
 		{"CHAINBIND_VAULT_TRANSIT_KEY", &cfg.VaultTransitKey},
+		{"CHAINBIND_ISSUER_ID", &cfg.IssuerID},
 		{"CHAINBIND_INTENT_AUTHORITY_URL", &cfg.IntentAuthorityURL},
 		{"CHAINBIND_KEYCLOAK_ISSUER", &cfg.KeycloakIssuer},
 		{"CHAINBIND_KEYCLOAK_JWKS_URL", &cfg.KeycloakJWKSURL},
+		{"CHAINBIND_KEYCLOAK_AUDIENCE", &cfg.KeycloakAudience},
+		{"CHAINBIND_AUDIENCES_FILE", &cfg.AudiencesFile},
 	}
 
 	var missing []string
@@ -116,9 +141,12 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("vault_addr", c.VaultAddr),
 		slog.String("vault_token", "[REDACTED]"),
 		slog.String("vault_transit_key", c.VaultTransitKey),
+		slog.String("issuer_id", c.IssuerID),
 		slog.String("intent_authority_url", c.IntentAuthorityURL),
 		slog.String("keycloak_issuer", c.KeycloakIssuer),
 		slog.String("keycloak_jwks_url", c.KeycloakJWKSURL),
+		slog.String("keycloak_audience", c.KeycloakAudience),
 		slog.String("http_addr", c.HTTPAddr),
+		slog.String("audiences_file", c.AudiencesFile),
 	)
 }

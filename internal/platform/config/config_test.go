@@ -16,9 +16,12 @@ var requiredVars = []string{
 	"CHAINBIND_VAULT_ADDR",
 	"CHAINBIND_VAULT_TOKEN",
 	"CHAINBIND_VAULT_TRANSIT_KEY",
+	"CHAINBIND_ISSUER_ID",
 	"CHAINBIND_INTENT_AUTHORITY_URL",
 	"CHAINBIND_KEYCLOAK_ISSUER",
 	"CHAINBIND_KEYCLOAK_JWKS_URL",
+	"CHAINBIND_KEYCLOAK_AUDIENCE",
+	"CHAINBIND_AUDIENCES_FILE",
 }
 
 // setAll sets every required var to a distinctive, per-var value and
@@ -52,6 +55,9 @@ func TestLoad_RequiredPresent_Succeeds(t *testing.T) {
 	if cfg.VaultTransitKey != values["CHAINBIND_VAULT_TRANSIT_KEY"] {
 		t.Errorf("VaultTransitKey = %q, want %q", cfg.VaultTransitKey, values["CHAINBIND_VAULT_TRANSIT_KEY"])
 	}
+	if cfg.IssuerID != values["CHAINBIND_ISSUER_ID"] {
+		t.Errorf("IssuerID = %q, want %q", cfg.IssuerID, values["CHAINBIND_ISSUER_ID"])
+	}
 	if cfg.IntentAuthorityURL != values["CHAINBIND_INTENT_AUTHORITY_URL"] {
 		t.Errorf("IntentAuthorityURL = %q, want %q", cfg.IntentAuthorityURL, values["CHAINBIND_INTENT_AUTHORITY_URL"])
 	}
@@ -60,6 +66,12 @@ func TestLoad_RequiredPresent_Succeeds(t *testing.T) {
 	}
 	if cfg.KeycloakJWKSURL != values["CHAINBIND_KEYCLOAK_JWKS_URL"] {
 		t.Errorf("KeycloakJWKSURL = %q, want %q", cfg.KeycloakJWKSURL, values["CHAINBIND_KEYCLOAK_JWKS_URL"])
+	}
+	if cfg.KeycloakAudience != values["CHAINBIND_KEYCLOAK_AUDIENCE"] {
+		t.Errorf("KeycloakAudience = %q, want %q", cfg.KeycloakAudience, values["CHAINBIND_KEYCLOAK_AUDIENCE"])
+	}
+	if cfg.AudiencesFile != values["CHAINBIND_AUDIENCES_FILE"] {
+		t.Errorf("AudiencesFile = %q, want %q", cfg.AudiencesFile, values["CHAINBIND_AUDIENCES_FILE"])
 	}
 	if cfg.HTTPAddr != defaultHTTPAddr {
 		t.Errorf("HTTPAddr = %q, want default %q", cfg.HTTPAddr, defaultHTTPAddr)
@@ -194,10 +206,13 @@ func TestLogValue_CoversEveryField(t *testing.T) {
 		VaultAddr:          "SENTINEL_VAULT_ADDR",
 		VaultToken:         "SENTINEL_VAULT_TOKEN",
 		VaultTransitKey:    "SENTINEL_TRANSIT_KEY",
+		IssuerID:           "SENTINEL_ISSUER_ID",
 		IntentAuthorityURL: "SENTINEL_AUTHORITY_URL",
 		KeycloakIssuer:     "SENTINEL_KEYCLOAK_ISSUER",
 		KeycloakJWKSURL:    "SENTINEL_JWKS_URL",
+		KeycloakAudience:   "SENTINEL_KEYCLOAK_AUDIENCE",
 		HTTPAddr:           "SENTINEL_HTTP_ADDR",
+		AudiencesFile:      "SENTINEL_AUDIENCES_FILE",
 	}
 
 	v := cfg.LogValue()
@@ -220,7 +235,8 @@ func TestLogValue_CoversEveryField(t *testing.T) {
 	}
 	for _, want := range []string{
 		"SENTINEL_VAULT_ADDR", "SENTINEL_TRANSIT_KEY", "SENTINEL_AUTHORITY_URL",
-		"SENTINEL_KEYCLOAK_ISSUER", "SENTINEL_JWKS_URL", "SENTINEL_HTTP_ADDR",
+		"SENTINEL_KEYCLOAK_ISSUER", "SENTINEL_JWKS_URL", "SENTINEL_KEYCLOAK_AUDIENCE", "SENTINEL_HTTP_ADDR", "SENTINEL_AUDIENCES_FILE",
+		"SENTINEL_ISSUER_ID",
 	} {
 		if !strings.Contains(rendered, want) {
 			t.Fatalf("LogValue omits %s: %s", want, rendered)

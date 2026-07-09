@@ -221,3 +221,50 @@ func TestStructuralFault_MarshalsAsText(t *testing.T) {
 		t.Fatalf("Report.Structural = %v, want %q", rec["Structural"], chainbind.FaultEmptySegmentOrder.String())
 	}
 }
+
+// TestStructuralFault_JSONRoundTrips pins that a StructuralFault, and a whole
+// Report, survive a marshal→unmarshal cycle as text. The HTTP shell returns a
+// Report as the body of /v1/packages/verify and a Go client decodes it back
+// into a chainbind.Report; MarshalJSON without UnmarshalJSON breaks exactly
+// that, because Structural marshals to a string but is a uint8 in the struct.
+func TestStructuralFault_JSONRoundTrips(t *testing.T) {
+	for _, want := range []chainbind.StructuralFault{
+		chainbind.FaultNone,
+		chainbind.FaultEmptySegmentOrder,
+		chainbind.FaultSigningViewUnbuildable,
+		chainbind.FaultSignatureUndecodable,
+	} {
+		raw, err := json.Marshal(want)
+		if err != nil {
+			t.Fatalf("marshal %v: %v", want, err)
+		}
+		var got chainbind.StructuralFault
+		if err := json.Unmarshal(raw, &got); err != nil {
+			t.Fatalf("unmarshal %s: %v", raw, err)
+		}
+		if got != want {
+			t.Fatalf("round trip: got %v, want %v", got, want)
+		}
+	}
+
+	// The whole Report a verify client receives and decodes.
+	in := &chainbind.Report{Structural: chainbind.FaultDuplicateAudience, SpecVersionSupported: true}
+	raw, err := json.Marshal(in)
+	if err != nil {
+		t.Fatalf("marshal report: %v", err)
+	}
+	var out chainbind.Report
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatalf("unmarshal report: %v", err)
+	}
+	if out.Structural != chainbind.FaultDuplicateAudience {
+		t.Fatalf("report round trip: Structural = %v, want FaultDuplicateAudience", out.Structural)
+	}
+
+	// An unrecognised fault string is rejected, not silently read as FaultNone
+	// — a garbled Report must not decode as a clean one.
+	var bad chainbind.StructuralFault
+	if err := json.Unmarshal([]byte(`"not a real fault"`), &bad); err == nil {
+		t.Fatal("unmarshalling an unknown fault string succeeded; want an error")
+	}
+}

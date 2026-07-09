@@ -3,6 +3,8 @@ package mock
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -186,5 +188,58 @@ func TestNew_MissingSeedDirErrors(t *testing.T) {
 	_, err := New("testdata/does-not-exist")
 	if err == nil {
 		t.Fatal("New with missing seed dir: got nil error, want an error")
+	}
+}
+
+// TestNew_EmptyIntentRefErrors proves a seed file with no ref is rejected
+// at construction rather than silently indexed under the empty string,
+// where it would be indistinguishable from "no ref given" everywhere else
+// in this package.
+func TestNew_EmptyIntentRefErrors(t *testing.T) {
+	dir := t.TempDir()
+	writeSeedFile(t, dir, "empty-ref.json", `{"ref":"","version":1,"rules":{}}`)
+
+	_, err := New(dir)
+	if !errors.Is(err, ErrUnknownIntentRef) {
+		t.Fatalf("New with an empty intent_ref: error = %v, want ErrUnknownIntentRef", err)
+	}
+}
+
+// TestNew_DuplicateIntentRefErrors proves two seed files declaring the same
+// intent_ref fail construction instead of one silently shadowing the
+// other's constraints — last-write-wins here would let one seed file
+// silently override another's rules, keyed on file iteration order.
+func TestNew_DuplicateIntentRefErrors(t *testing.T) {
+	dir := t.TempDir()
+	writeSeedFile(t, dir, "a.json", `{"ref":"intent:dup","version":1,"rules":{}}`)
+	writeSeedFile(t, dir, "b.json", `{"ref":"intent:dup","version":2,"rules":{}}`)
+
+	_, err := New(dir)
+	if !errors.Is(err, ErrDuplicateIntentRef) {
+		t.Fatalf("New with a duplicate intent_ref: error = %v, want ErrDuplicateIntentRef", err)
+	}
+}
+
+func writeSeedFile(t *testing.T, dir, name, content string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o600); err != nil {
+		t.Fatalf("write seed file %q: %v", name, err)
+	}
+}
+
+func TestPing_ReturnsContextErr(t *testing.T) {
+	v, err := New(seedDir)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	if err := v.Ping(context.Background()); err != nil {
+		t.Fatalf("Ping with a live context: %v, want nil", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := v.Ping(ctx); !errors.Is(err, context.Canceled) {
+		t.Fatalf("Ping with a cancelled context: %v, want context.Canceled", err)
 	}
 }
