@@ -45,4 +45,10 @@ var (
 	// ErrWrongRecipientKey is returned when the private key supplied to
 	// Open does not match any audience's key confirmation.
 	ErrWrongRecipientKey = errors.New("chainbind: wrong recipient key")
+
+	// ErrBindingCollision is returned when a profile's Extra binding
+	// reuses a name reserved for a core binding (segments_root,
+	// intent_commitment). A profile that shadows a core binding is a
+	// bug, not a preference.
+	ErrBindingCollision = errors.New("chainbind: binding name collision")
 )

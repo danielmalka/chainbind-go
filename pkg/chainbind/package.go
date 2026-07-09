@@ -80,8 +80,19 @@ const (
 	bindingsFieldIntentCommitment = "intent_commitment"
 )
 
-// MarshalJSON flattens the core fields and Extra into one JSON object.
+// MarshalJSON flattens the core fields and Extra into one JSON object. A
+// profile-supplied Extra key named segments_root or intent_commitment is
+// rejected rather than silently overwritten or dropped: those two names are
+// core bindings, and a signed package whose segments_root came from an
+// untrusted profile map would be a real vulnerability, not a quirk.
 func (b Bindings) MarshalJSON() ([]byte, error) {
+	if _, collides := b.Extra[bindingsFieldSegmentsRoot]; collides {
+		return nil, fmt.Errorf("%w: %q", ErrBindingCollision, bindingsFieldSegmentsRoot)
+	}
+	if _, collides := b.Extra[bindingsFieldIntentCommitment]; collides {
+		return nil, fmt.Errorf("%w: %q", ErrBindingCollision, bindingsFieldIntentCommitment)
+	}
+
 	m := make(map[string]string, len(b.Extra)+2)
 	for k, v := range b.Extra {
 		m[k] = v
