@@ -35,15 +35,25 @@ func New(priv ed25519.PrivateKey, kid string) (*Signer, error) {
 	return &Signer{priv: priv, kid: kid}, nil
 }
 
-// Sign signs message with the Ed25519 private key and returns the raw
-// signature together with the configured kid. It does not block and
+// Kid returns the configured key identifier. It never signs anything: a
+// caller that needs the kid before it can build the bytes to be signed —
+// which Seal does, since issuer.kid is inside the signing view — must be
+// able to ask.
+func (s *Signer) Kid(ctx context.Context) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", fmt.Errorf("chainbind/signer/local: %w", err)
+	}
+	return s.kid, nil
+}
+
+// Sign signs message with the Ed25519 private key. It does not block and
 // ignores ctx beyond the standard cancellation check, since Ed25519
 // signing here is in-process and does not itself make a network call.
-func (s *Signer) Sign(ctx context.Context, message []byte) (signature []byte, kid string, err error) {
+func (s *Signer) Sign(ctx context.Context, message []byte) (signature []byte, err error) {
 	if err := ctx.Err(); err != nil {
-		return nil, "", fmt.Errorf("chainbind/signer/local: %w", err)
+		return nil, fmt.Errorf("chainbind/signer/local: %w", err)
 	}
-	return ed25519.Sign(s.priv, message), s.kid, nil
+	return ed25519.Sign(s.priv, message), nil
 }
 
 // Verify reports whether sig is a valid Ed25519 signature over message
