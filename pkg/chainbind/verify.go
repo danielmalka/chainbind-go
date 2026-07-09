@@ -53,6 +53,19 @@ func (r *Report) OK() bool {
 	return level1Passed(r) && r.Intent.Evaluated && r.Intent.Valid
 }
 
+// Level1 reports whether every structural check passed: version, signature,
+// AAD context, ciphertext hashes and bindings. It is what Open requires
+// before it will recover a data key, and it is deliberately separate from
+// OK: opening is offline, and the intent level is not an integrity property.
+// A recipient who also wants to know the package is bound to a live
+// authorization runs Verify and reads OK.
+func (r *Report) Level1() bool {
+	if r == nil {
+		return false
+	}
+	return level1Passed(r)
+}
+
 // level1Passed reports whether every Level 1 check in r succeeded,
 // including that CipherHashes was actually populated (non-nil, non-empty)
 // rather than left at its post-abort zero value. It gates whether Level 2

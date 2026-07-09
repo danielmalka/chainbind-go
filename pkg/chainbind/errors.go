@@ -42,9 +42,12 @@ var (
 	// package's claimed constraints or commitment.
 	ErrIntentInvalid = errors.New("chainbind: intent invalid")
 
-	// ErrWrongRecipientKey is returned when the private key supplied to
-	// Open does not match any audience's key confirmation.
-	ErrWrongRecipientKey = errors.New("chainbind: wrong recipient key")
+	// There is deliberately no ErrWrongRecipientKey. One was declared here
+	// while the ports were being sketched, and Open made it dead: a key
+	// matching no audience, a failed unwrap, a failed GCM tag and a
+	// spliced segment all return ErrDecryptionFailed. Telling them apart
+	// would answer questions an attacker is not entitled to ask — naming
+	// the failure is the oracle.
 
 	// ErrBindingCollision is returned when a profile's Extra binding
 	// reuses a name reserved for a core binding (segments_root,
@@ -57,4 +60,9 @@ var (
 	// failure is reported through *Report with OK() == false, not through
 	// this error.
 	ErrNilPackage = errors.New("chainbind: verify: package is nil")
+
+	// ErrIntegrityCheckFailed is returned by Open when Verify's Level 1
+	// checks do not all pass. Open does not unwrap a data key or touch a
+	// ciphertext in that case (PRD Story 4 AC-1, AC-6).
+	ErrIntegrityCheckFailed = errors.New("chainbind: open: integrity check failed")
 )

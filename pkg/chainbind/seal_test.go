@@ -202,6 +202,10 @@ type spyWrapper struct {
 	wrapCalled *atomic.Bool
 }
 
+func (s spyWrapper) PublicKey(priv []byte) ([]byte, error) {
+	return s.inner.PublicKey(priv)
+}
+
 func (s spyWrapper) Wrap(ctx context.Context, recipientPub, dek []byte) ([]byte, []byte, error) {
 	s.wrapCalled.Store(true)
 	return s.inner.Wrap(ctx, recipientPub, dek)

@@ -34,6 +34,16 @@ type KeyWrapper interface {
 	Wrap(ctx context.Context, recipientPub, dek []byte) (wrapped, epk []byte, err error)
 	Unwrap(ctx context.Context, priv, epk, wrapped []byte) (dek []byte, err error)
 	Thumbprint(recipientPub []byte) (jkt string, err error)
+
+	// PublicKey derives the public half of priv. Open needs it to learn
+	// which audience the caller is, by thumbprinting it and matching
+	// against cnf. It belongs here because the wrapper owns the curve.
+	//
+	// This is what keeps Open from taking a segment name. A caller that
+	// could name its segment would turn a cryptographic match into an
+	// access-control decision, and an access-control decision is a thing
+	// that can be got wrong (D-002).
+	PublicKey(priv []byte) (pub []byte, err error)
 }
 
 // IntentDecision is the authority's verdict on whether an execution falls
