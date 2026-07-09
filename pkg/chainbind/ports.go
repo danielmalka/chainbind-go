@@ -7,17 +7,33 @@ import "context"
 // the resulting signature needs only the issuer's public key and does not
 // require this port (TECHSPEC-001 §6.4, decision 3).
 type Signer interface {
-	// Sign signs message and returns the signature together with the kid
-	// that identifies the key used (e.g. a Vault key version).
-	Sign(ctx context.Context, message []byte) (signature []byte, kid string, err error)
+	// Kid identifies the key Sign will use (e.g. a Vault Transit key
+	// name and version). It is separate from Sign because issuer.kid is
+	// itself inside the signed view (TECHSPEC-001 §6.4): the kid must be
+	// known before the bytes that commit to it exist. Without this, the
+	// only way to learn the kid is to sign something — and a Signer must
+	// never be asked to sign anything but the thing being signed.
+	Kid(ctx context.Context) (string, error)
+
+	// Sign signs message with the key Kid names.
+	Sign(ctx context.Context, message []byte) (signature []byte, err error)
 }
 
 // KeyWrapper wraps a per-segment data-encryption key to a recipient's public
 // key at Seal, and unwraps it with the recipient's private key at Open. Open
 // depends on KeyWrapper alone: no signer, no authority, no network.
+// Thumbprint returns the RFC 7638 JWK thumbprint of recipientPub, the value
+// recorded in cnf[a].jkt. It belongs on this port rather than being supplied
+// by the caller: cnf must be *derived* from the very public key the data key
+// was wrapped to, by the component that understands that key's format. A
+// caller-supplied thumbprint would make cnf an assertion by the issuer
+// rather than a confirmation, and Open — which matches a recipient's key
+// against cnf — would then be matching against the issuer's claim instead of
+// against the key the segment was actually sealed to.
 type KeyWrapper interface {
 	Wrap(ctx context.Context, recipientPub, dek []byte) (wrapped, epk []byte, err error)
 	Unwrap(ctx context.Context, priv, epk, wrapped []byte) (dek []byte, err error)
+	Thumbprint(recipientPub []byte) (jkt string, err error)
 }
 
 // IntentDecision is the authority's verdict on whether an execution falls

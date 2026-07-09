@@ -19,7 +19,11 @@ func TestSign_VerifyRoundTrip(t *testing.T) {
 	}
 
 	message := []byte(`{"package_id":"pkg_test_0001"}`)
-	sig, kid, err := s.Sign(context.Background(), message)
+	sig, err := s.Sign(context.Background(), message)
+	kid, kidErr := s.Kid(context.Background())
+	if kidErr != nil {
+		t.Fatalf("Kid: %v", kidErr)
+	}
 	if err != nil {
 		t.Fatalf("Sign: %v", err)
 	}
@@ -42,7 +46,7 @@ func TestVerify_FailsOnFlippedMessageByte(t *testing.T) {
 	}
 
 	message := []byte(`{"package_id":"pkg_test_0001"}`)
-	sig, _, err := s.Sign(context.Background(), message)
+	sig, err := s.Sign(context.Background(), message)
 	if err != nil {
 		t.Fatalf("Sign: %v", err)
 	}
@@ -69,7 +73,7 @@ func TestVerify_FailsOnWrongPublicKey(t *testing.T) {
 	}
 
 	message := []byte(`{"package_id":"pkg_test_0001"}`)
-	sig, _, err := s.Sign(context.Background(), message)
+	sig, err := s.Sign(context.Background(), message)
 	if err != nil {
 		t.Fatalf("Sign: %v", err)
 	}
@@ -115,7 +119,7 @@ func TestSign_RespectsCanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, _, err = s.Sign(ctx, []byte("message"))
+	_, err = s.Sign(ctx, []byte("message"))
 	if err == nil {
 		t.Fatalf("Sign with a canceled context: got nil error, want one")
 	}
@@ -160,5 +164,46 @@ func TestVerify_MalformedKeyOrSignature_ReturnsFalse_DoesNotPanic(t *testing.T) 
 				t.Fatal("Verify returned true for malformed input")
 			}
 		})
+	}
+}
+
+// TestKid_DoesNotSign is the point of separating Kid from Sign: Seal needs
+// the kid before it can build the view that commits to it, and a Signer must
+// never be asked to sign anything but the thing being signed. A signer whose
+// only way to reveal its kid is to sign a probe message is a signing oracle,
+// and against Vault Transit it is also an extra network call and an extra
+// audit entry on every seal.
+func TestKid_DoesNotSign(t *testing.T) {
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("generate key: %v", err)
+	}
+	s, err := New(priv, "issuer-signing-key-1:v1")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	kid, err := s.Kid(context.Background())
+	if err != nil {
+		t.Fatalf("Kid: %v", err)
+	}
+	if kid != "issuer-signing-key-1:v1" {
+		t.Fatalf("Kid = %q, want the configured kid", kid)
+	}
+
+	// Kid is stable and side-effect free: calling it twice, and calling it
+	// before Sign, changes nothing about what Sign produces.
+	again, err := s.Kid(context.Background())
+	if err != nil || again != kid {
+		t.Fatalf("Kid not stable: %q, %v", again, err)
+	}
+
+	message := []byte("the only bytes this key ever signs")
+	sig, err := s.Sign(context.Background(), message)
+	if err != nil {
+		t.Fatalf("Sign: %v", err)
+	}
+	if !Verify(pub, message, sig) {
+		t.Fatal("signature over the real message does not verify")
 	}
 }

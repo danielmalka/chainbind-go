@@ -112,6 +112,13 @@ func (Wrapper) Unwrap(_ context.Context, priv, epk, wrapped []byte) (dek []byte,
 	return dek, nil
 }
 
+// Thumbprint satisfies chainbind.KeyWrapper. The value is derived from the
+// same public key Wrap seals the data key to, which is what makes cnf[a].jkt
+// a confirmation rather than an issuer's claim.
+func (Wrapper) Thumbprint(recipientPub []byte) (string, error) {
+	return Thumbprint(recipientPub)
+}
+
 // Thumbprint computes the RFC 7638 JWK thumbprint of an X25519 public key,
 // represented per RFC 8037 as an OKP JWK with crv "X25519". The three
 // required members are already in lexicographic order (crv, kty, x) and
