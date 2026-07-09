@@ -1,0 +1,7 @@
+{
+  "ref": "intent:deny-example",
+  "version": 1,
+  "rules": {
+    "region": { "equals": ["us"] }
+  }
+}
