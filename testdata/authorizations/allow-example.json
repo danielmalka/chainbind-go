@@ -1,0 +1,8 @@
+{
+  "ref": "intent:allow-example",
+  "version": 1,
+  "rules": {
+    "region": { "equals": ["us", "eu"] },
+    "limit": { "max": 500 }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "ref": "intent:amendable-v2",
+  "version": 2,
+  "rules": {
+    "limit": { "max": 250 }
+  }
+}
