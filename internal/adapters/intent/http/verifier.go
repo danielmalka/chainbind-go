@@ -12,6 +12,11 @@
 //	GET {baseURL}/v1/intents/{intentRef}/constraints-hash
 //	  200 body: {"constraints_hash": string}
 //
+//	GET {baseURL}/v1/health
+//	  2xx: the authority is reachable. Ping (TASK-001-12) declares this
+//	  endpoint as an extension of the wire shape above; TASK-001-14's
+//	  compose authority is what serves it.
+//
 // Any non-200 status, a malformed body, a request that cannot be built, or a
 // transport-level failure (including a context deadline) is an error. None
 // of them is ever mistaken for an allow or for a valid hash — an
@@ -25,12 +30,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/danielmalka/chainbind-go/pkg/chainbind"
 )
+
+// maxResponseBody caps how much of an authority response this adapter will
+// ever decode. The authority is a trusted external dependency, but an
+// authority (or anyone between here and it) returning an unbounded body is
+// an out-of-memory kill on the calling process, not a fail-open — every
+// path through doJSON still yields an error, never an allow. Matches the
+// Vault signer adapter's own cap and its reasoning.
+const maxResponseBody = 1 << 20 // 1 MiB
 
 // Sentinel errors. Static strings only — no projection value, no payload
 // data, no response body ever appears in one of these (AGENTS.local.md
@@ -146,9 +160,34 @@ func (v *Verifier) doJSON(req *http.Request, out any) error {
 		return fmt.Errorf("%w: status %d", ErrAuthorityResponse, resp.StatusCode)
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxResponseBody)).Decode(out); err != nil {
 		return fmt.Errorf("%w: %w", ErrAuthorityResponse, err)
 	}
 
+	return nil
+}
+
+// Ping implements the HTTP shell's Prober port: it requires a 2xx from
+// {baseURL}/v1/health and decodes nothing, proving the authority is
+// reachable without asking it anything about an intent_ref.
+func (v *Verifier) Ping(ctx context.Context) error {
+	ctx, cancel := v.withDeadline(ctx)
+	defer cancel()
+
+	endpoint := v.baseURL + "/v1/health"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, http.NoBody)
+	if err != nil {
+		return fmt.Errorf("http: build health request: %w", err)
+	}
+
+	resp, err := v.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrAuthorityUnreachable, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("%w: status %d", ErrAuthorityResponse, resp.StatusCode)
+	}
 	return nil
 }

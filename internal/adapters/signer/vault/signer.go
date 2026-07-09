@@ -132,21 +132,9 @@ func New(ctx context.Context, addr, token, keyName string, client *http.Client, 
 	ctx, cancel := s.withDeadline(ctx)
 	defer cancel()
 
-	// url.PathEscape, not concatenation. keyName comes from an operator's
-	// environment rather than from an attacker, but an unescaped segment
-	// walks out of the transit mount ("../../sys/health") and can append a
-	// query string the adapter never meant to send. The intent HTTP adapter
-	// escapes its path segment; there is no reason this one should not.
-	endpoint := s.addr + "/v1/transit/keys/" + url.PathEscape(keyName)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("vault: build key metadata request: %w", err)
-	}
-	req.Header.Set("X-Vault-Token", s.token)
-
 	var resp keysResponse
-	if err := s.doJSON(req, &resp); err != nil {
-		return nil, fmt.Errorf("vault: fetch key metadata: %w", err)
+	if err := s.fetchKeyMetadata(ctx, &resp); err != nil {
+		return nil, err
 	}
 
 	if resp.Data.Type != "ed25519" {
@@ -183,6 +171,41 @@ type keysResponse struct {
 
 type keyVersionKey struct {
 	PublicKey string `json:"public_key"`
+}
+
+// fetchKeyMetadata calls GET {addr}/v1/transit/keys/{name} and decodes the
+// response into out. It is the request-building code New uses to pin a
+// key version, extracted so Ping can reuse it to prove Vault is reachable
+// without ever calling transit/sign.
+func (s *Signer) fetchKeyMetadata(ctx context.Context, out *keysResponse) error {
+	// url.PathEscape, not concatenation. keyName comes from an operator's
+	// environment rather than from an attacker, but an unescaped segment
+	// walks out of the transit mount ("../../sys/health") and can append a
+	// query string the adapter never meant to send. The intent HTTP adapter
+	// escapes its path segment; there is no reason this one should not.
+	endpoint := s.addr + "/v1/transit/keys/" + url.PathEscape(s.name)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, http.NoBody)
+	if err != nil {
+		return fmt.Errorf("vault: build key metadata request: %w", err)
+	}
+	req.Header.Set("X-Vault-Token", s.token)
+
+	if err := s.doJSON(req, out); err != nil {
+		return fmt.Errorf("vault: fetch key metadata: %w", err)
+	}
+	return nil
+}
+
+// Ping implements the HTTP shell's Prober port: it re-fetches
+// transit/keys/{name} to prove Vault is reachable, and signs nothing. A
+// readiness probe must never spend the signing key it is only checking
+// for reachability.
+func (s *Signer) Ping(ctx context.Context) error {
+	ctx, cancel := s.withDeadline(ctx)
+	defer cancel()
+
+	var resp keysResponse
+	return s.fetchKeyMetadata(ctx, &resp)
 }
 
 // Kid returns "{name}:v{pinned version}" from the state pinned at

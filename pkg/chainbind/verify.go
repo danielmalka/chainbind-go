@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 )
 
 // IntentResult is the outcome of Level 2 — the authority-backed check
@@ -100,13 +101,36 @@ func (f StructuralFault) String() string {
 // documented value of anything. The ordinal is an implementation detail of
 // the iota block and may shift when a fault is inserted; the text is the
 // contract.
-//
-// There is deliberately no UnmarshalJSON. A Report is Verify's answer to a
-// caller, never an input to it: nothing in this library parses one back.
-// Adding a decoder would invite a caller to round-trip a Report and treat
-// the result as if Verify had produced it.
 func (f StructuralFault) MarshalJSON() ([]byte, error) {
 	return json.Marshal(f.String())
+}
+
+// UnmarshalJSON parses the text form MarshalJSON produces, so a Report
+// survives a JSON round trip.
+//
+// The HTTP shell returns a Report as the body of /v1/packages/verify, and a
+// Go client decodes that body straight back into a chainbind.Report. A type
+// that marshals to a string but is a uint8 in the struct cannot be decoded
+// without this: encoding/json would try to write a string into the uint8 and
+// fail. A wire response type must round-trip; once Report crosses the wire it
+// is one, whatever its role inside this library.
+//
+// An unrecognised fault string is an error, not silently FaultNone: a body
+// claiming a fault this build does not know is malformed, and turning it into
+// "no fault" would let a garbled Report read as a clean one. The error names
+// no part of the input (invariant 10).
+func (f *StructuralFault) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	for v := FaultNone; v <= FaultSignatureUndecodable; v++ {
+		if v.String() == s {
+			*f = v
+			return nil
+		}
+	}
+	return errors.New("chainbind: unrecognised structural fault")
 }
 
 // Report is Verify's complete answer: every check TECHSPEC-001 §6.5 defines,
