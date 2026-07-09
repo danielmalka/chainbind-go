@@ -1,0 +1,13 @@
+# Multi-stage build for the chainbind CLI (cmd/chainbind). Ships the one
+# binary that ever runs Open (D-002). Not on the seal/verify serving path;
+# provided for parity with the deployment set and ad-hoc open/verify runs.
+FROM golang:1.26 AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -trimpath -o /out/chainbind ./cmd/chainbind
+
+FROM alpine:3.20
+COPY --from=build /out/chainbind /usr/local/bin/chainbind
+ENTRYPOINT ["chainbind"]

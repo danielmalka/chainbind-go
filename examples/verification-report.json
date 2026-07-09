@@ -1,0 +1,22 @@
+{
+  "SpecVersionSupported": true,
+  "Structural": "no structural fault",
+  "Signature": true,
+  "AADContextConsistent": true,
+  "CipherHashes": {
+    "gateway": true,
+    "merchant": true,
+    "user": true
+  },
+  "SegmentsRoot": true,
+  "ProfileBindings": {
+    "checkout_hash": true,
+    "conditional_transaction_id": true,
+    "transaction_id": true
+  },
+  "Intent": {
+    "Evaluated": true,
+    "Valid": true,
+    "Reason": ""
+  }
+}

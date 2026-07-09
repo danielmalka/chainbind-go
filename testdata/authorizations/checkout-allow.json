@@ -1,0 +1,8 @@
+{
+  "ref": "intent:checkout-allow",
+  "version": 1,
+  "rules": {
+    "currency": { "equals": ["BRL", "USD"] },
+    "amount": { "max": 100000000 }
+  }
+}

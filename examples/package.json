@@ -1,0 +1,132 @@
+{
+  "spec_version": "1.0.0",
+  "profile": "agentic-checkout/v1",
+  "package_id": "pkg_7229d1d39ec1e7e1bd005a2fc4016c96",
+  "issued_at": "2026-07-09T23:10:28.493444316Z",
+  "issuer": {
+    "iss": "did:chainbind:dev-issuer",
+    "kid": "issuer-signing-key:v1"
+  },
+  "intent": {
+    "intent_ref": "intent:checkout-allow",
+    "authority": "http://authority:9000",
+    "constraints_hash": "sha256:fdf0dc026d3d6a5d5617a47743ce190f4a6755e0883cdfec90bd65ca53534b16"
+  },
+  "cnf": {
+    "gateway": {
+      "kid": "gateway-key-1",
+      "jkt": "Te4JwTzF59mo2yFCMhcOEbbPMCPhsLFay1XehCRGHmY",
+      "method": "jwk-thumbprint"
+    },
+    "merchant": {
+      "kid": "merchant-key-1",
+      "jkt": "uUnukyDm0p2Xo1OoBD-we3LoWgXlkdGLeAe767BRjZE",
+      "method": "jwk-thumbprint"
+    },
+    "user": {
+      "kid": "user-key-1",
+      "jkt": "XovjHeoRO-30cAcI1aHO2WylBKPJhLZtsfFOVEh12tY",
+      "method": "jwk-thumbprint"
+    }
+  },
+  "bindings": {
+    "checkout_hash": "sha256:70df7775635f933eebaed090956266106d2d5edac6c5a99bf4e28cca58108f3c",
+    "conditional_transaction_id": "ctx:sha256:ed6619b6712d140cacc0528c656c83af0d03045c6e0c80a83b3c26279b81e63b",
+    "intent_commitment": "ctx:sha256:ed6619b6712d140cacc0528c656c83af0d03045c6e0c80a83b3c26279b81e63b",
+    "segments_root": "sha256:cff127caf2118aa8b1d7f98e613bb223b25fcc71763b79358ae697febb403844",
+    "transaction_id": "txn:sha256:7149a932a8e7fc91dd6bc739001574e78ecb2203948571a5e0e3a2e1dc982540"
+  },
+  "manifest": {
+    "schema": "chainbind-package/v1",
+    "hash_alg": "SHA-256",
+    "canonicalization": "RFC8785",
+    "segment_order": [
+      "user",
+      "merchant",
+      "gateway"
+    ],
+    "aad_context": {
+      "package_id": "pkg_7229d1d39ec1e7e1bd005a2fc4016c96",
+      "tenant_id": "demo-tenant",
+      "environment": "dev"
+    },
+    "segments": {
+      "gateway": {
+        "audience": "gateway",
+        "kid": "gateway-key-1",
+        "alg": "AES-256-GCM",
+        "wrap_alg": "ECDH-ES+A256KW",
+        "plain_hash": "sha256:338746670cbfa646aeb24efcc7ccf8dc4ec18de112a4ead410ee0e5d27247e98",
+        "cipher_hash": "sha256:c63280917273129b9285889e59fc1f552b9b54c1371b303d9f94fc84951d4510"
+      },
+      "merchant": {
+        "audience": "merchant",
+        "kid": "merchant-key-1",
+        "alg": "AES-256-GCM",
+        "wrap_alg": "ECDH-ES+A256KW",
+        "plain_hash": "sha256:70df7775635f933eebaed090956266106d2d5edac6c5a99bf4e28cca58108f3c",
+        "cipher_hash": "sha256:87cf80c3000aff2f6b9496d7a447b37bce1dc77d07f30d7aefd94b151a27b5c4"
+      },
+      "user": {
+        "audience": "user",
+        "kid": "user-key-1",
+        "alg": "AES-256-GCM",
+        "wrap_alg": "ECDH-ES+A256KW",
+        "plain_hash": "sha256:d8ea21d1e217de58bd489052bf6263c8116c9261330335ff6423f6d27fafdf94",
+        "cipher_hash": "sha256:f347ff8e28ff44746257ccec521464d802b8c89d142e8234cd4293a133a55686"
+      }
+    },
+    "disclosures": []
+  },
+  "segments": {
+    "gateway": {
+      "epk": {
+        "kty": "OKP",
+        "crv": "X25519",
+        "x": "vLe1daF5So7L75Bp4MvCO2JYU3oO5_hf9nxhlQpq0nE"
+      },
+      "dek_wrapped": "skueuQ-bEFW8SPNf726pkS4Ts6AHBaWEJOaid_VJ86ofUj_nJWTrvg",
+      "nonce": "ZLcCGpmW1f__9NwE",
+      "ciphertext": "ODE6uLf1Y8EFUAr2V1avXaQrcDlhLCXzaljJ9RRyGQ7ZAo3O4aVYs58Tk0MfxUMEl9z6LffmWOqrhdy0NEm16BYVN7GA1lIwLo8pc2TobCRCY_lVAXptLRg7_8b9OPyH35B2AV6-ftExfKUA9PK1HCBJWcNVqlfF_YTi8OueVdWL6FMzq_n_t-a-9VeZ4mKzn01-o8jcMqeRYBOfYjvY1m4JFkiaJx6XYTyoyBkYv3c6oh6WbAWH-A",
+      "tag": "O7b8aCKU-VL9oAgl2aJxEA"
+    },
+    "merchant": {
+      "epk": {
+        "kty": "OKP",
+        "crv": "X25519",
+        "x": "qfvzb42dx_oj3YPBLMbTQt306wQIJKKopO0tkUYE_jc"
+      },
+      "dek_wrapped": "Ze4Fc-zhCEq-VckqYAgPVS0ugkxMumAy7RWSANxQvmrHtIJpvdpwgA",
+      "nonce": "HRrJKwZXKUAjM-JM",
+      "ciphertext": "LsKuBGZgZHEi5HC0_AkBIpflSlpWtGTxMEYo2G_MvfAipHCuA7o0DTiQaSOt9CizeQZXDm5AYmITHGKw_O8dOVcLH4Ju_bJD1oRod0gTe_gjxzdsw9XVnTKtaihp-chairSW7-GwHmVV4wSBm8N0OtA6M_iy-reaoOkJJTUNEgDMPSwMsBQvKeVUwMT2i1vLU5LMQfeCZ6DU1SXzRh1O7CEw2cbsKprrL5CLlUUxJ3Bm193nr8Oxh8fcYvb3OCMdN1dDGdUwiTsifR0_gOKHY-qoNNUhScpWutwErIzrLx7Jp0UxSB-rxHqj4M5VQZPZWoqaA7uFLjRKtZ_Ozsx_wXZdjR0jkul1KIwPFTiGYd0qc6ezBS3YWeUkO_nQHUNpQPaOtExAZSgsTVRNneIaBFSzt2pHmqJdSqaYSqhFiZVZznuU",
+      "tag": "oAl8S-sqFfcPRImZpfcPNw"
+    },
+    "user": {
+      "epk": {
+        "kty": "OKP",
+        "crv": "X25519",
+        "x": "0RynepByeea7KxdOREjEcbzQNUn68e4e0ZgOgS6leTo"
+      },
+      "dek_wrapped": "dRkAD2haBmv1NRlsmbvtKvu_KfsFaPLFyYnmnqnpgzsP3sluFubCSg",
+      "nonce": "-OVOARToh4-fOoZR",
+      "ciphertext": "8A1KMfeJI6U4GCPXgByhJgeUiy2T2IveWYHgNESojtDeFawbYq-7gEVj3lcCmk_ltKJrSIXWNnFGznplMv3TGccqPiaVFXSeQr0Wxv2abSPHF6yL2MLlRYncjauvcSIl5OkLnlAdblixdZhdcfP7G9l5dkINod10dC3XSVKtW58xtCM9wCOCZeUwMGqT0cUBsdgTMgCCUGofVPDEj9ZHi_faRipVFArkxzWMi87wln3KZKJn1wU1BFdSlnZSlqurngjmA9FQ9Qia2S3TYzYDzA5EATItbEszqWI",
+      "tag": "X6uMdhsIhzeDkwyFZQaEhw"
+    }
+  },
+  "signature": {
+    "alg": "EdDSA",
+    "kid": "issuer-signing-key:v1",
+    "signed_fields": [
+      "spec_version",
+      "profile",
+      "package_id",
+      "issued_at",
+      "issuer",
+      "intent",
+      "cnf",
+      "bindings",
+      "manifest"
+    ],
+    "value": "1tX-TFmwuzHmr0HYtvePZu312Tj7ful44OgAJ59ibMKrimqptfFS_ap0AsZRMuZRsEzh-3Dx-yFcBd8H-wxuBQ"
+  }
+}
