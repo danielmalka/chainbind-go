@@ -1,0 +1,132 @@
+{
+  "spec_version": "1.0.0",
+  "profile": "agentic-checkout/v1",
+  "package_id": "pkg_8376d3e3600ba340dd4fcbd75896b51e",
+  "issued_at": "2026-07-09T12:00:00Z",
+  "issuer": {
+    "iss": "chainbind-go",
+    "kid": "issuer-signing-key-1"
+  },
+  "intent": {
+    "intent_ref": "intent:golden-fixture",
+    "authority": "https://intent-authority.local/v1",
+    "constraints_hash": "sha256:1c459ac49a6cce8f1171f9ae58bda24761178de39f03b4343c4e7505b9d8afbd"
+  },
+  "cnf": {
+    "gateway": {
+      "kid": "gateway-key-1",
+      "jkt": "TqwBQxi1AOe3Psx5j-yzNRTjLmuxuhkwiXhp9ZJaN4s",
+      "method": "jwk-thumbprint"
+    },
+    "merchant": {
+      "kid": "merchant-key-1",
+      "jkt": "z_Y48DKKS_74fyQL9LKWLKhyUa6FdXdWGLOl2kIo1XY",
+      "method": "jwk-thumbprint"
+    },
+    "user": {
+      "kid": "user-key-1",
+      "jkt": "zV6Sge8ODcRd8XohIkN-VeAZFQkYUWrWfXa8YEAtFpQ",
+      "method": "jwk-thumbprint"
+    }
+  },
+  "bindings": {
+    "checkout_hash": "sha256:55f99d1fc4d8876d26d8c6943bd72cffbaa6e786d8db7eb42b5b6c051724bb9f",
+    "conditional_transaction_id": "ctx:sha256:8e952b25b26427a90e017232f4f5dc842fd0fef877ad7c2175bd1070c6f8225b",
+    "intent_commitment": "ctx:sha256:8e952b25b26427a90e017232f4f5dc842fd0fef877ad7c2175bd1070c6f8225b",
+    "segments_root": "sha256:a9671b14f7ab4236c002ee1faf369624736c0d1a8589ab441b7d6774157d2094",
+    "transaction_id": "txn:sha256:14ebc1d0b19002d2adbbf983d4023e64742b1db96ad72d4450608febeb14c63f"
+  },
+  "manifest": {
+    "schema": "chainbind-package/v1",
+    "hash_alg": "SHA-256",
+    "canonicalization": "RFC8785",
+    "segment_order": [
+      "user",
+      "merchant",
+      "gateway"
+    ],
+    "aad_context": {
+      "package_id": "pkg_8376d3e3600ba340dd4fcbd75896b51e",
+      "tenant_id": "golden-tenant",
+      "environment": "golden-env"
+    },
+    "segments": {
+      "gateway": {
+        "audience": "gateway",
+        "kid": "gateway-key-1",
+        "alg": "AES-256-GCM",
+        "wrap_alg": "ECDH-ES+A256KW",
+        "plain_hash": "sha256:1f5e802e28c9287827a7a69aff027acc4bf03d0631a082179be1a9e6154f5355",
+        "cipher_hash": "sha256:fb89c3a44a1f7b12b669b24c7f37704da5df4ae4ef1786ddbdcde4cdf9c05501"
+      },
+      "merchant": {
+        "audience": "merchant",
+        "kid": "merchant-key-1",
+        "alg": "AES-256-GCM",
+        "wrap_alg": "ECDH-ES+A256KW",
+        "plain_hash": "sha256:55f99d1fc4d8876d26d8c6943bd72cffbaa6e786d8db7eb42b5b6c051724bb9f",
+        "cipher_hash": "sha256:6e9e48cbfbffab395de0da101e43ac976334eb32f5f4255bed72d289103063ba"
+      },
+      "user": {
+        "audience": "user",
+        "kid": "user-key-1",
+        "alg": "AES-256-GCM",
+        "wrap_alg": "ECDH-ES+A256KW",
+        "plain_hash": "sha256:27e33de5a01155ebf00fe968cac6fd10db7ddbcd6caa1804c5d3243b28d9aa1f",
+        "cipher_hash": "sha256:695441127e6e3713b6e9f3a851ce70d1a85fbc84dfb42815edf5551e98771de4"
+      }
+    },
+    "disclosures": []
+  },
+  "segments": {
+    "gateway": {
+      "epk": {
+        "kty": "OKP",
+        "crv": "X25519",
+        "x": "TXcxyg7LstZdfZDJfIlImiDT98eHbJeXZftr-jPIDws"
+      },
+      "dek_wrapped": "hKCQrC-eseFuZoJH85xIgpfx5HIdvtcArOPT3ic6t9v6Wh-QpwQRHg",
+      "nonce": "GjrJvYbMUYkDElUX",
+      "ciphertext": "uZix-5GRIB-xrH_bQHkwPFfZCdhIUfc3tRvEiGZ34QGdJ2h740Yn_kQHiQh-NZdU8XQ9mQShaq6O7KXKCa1ik2UnzezdJ6dB2qTxjULjyOWnFwfd2HK_lECWvO9VDYKc8CTwUqOtDEIj-BtvfICF8W59sziKCfZuO1ixhSHrZgqg-hDABwb1YBH7979hk6IWj3aCWjcyBLdL2VIrusoueZsQTMSw2fZDWXS-Oz-YlLpf55MtItM",
+      "tag": "cFe4VDgNEqQdqEwDTXCPag"
+    },
+    "merchant": {
+      "epk": {
+        "kty": "OKP",
+        "crv": "X25519",
+        "x": "eGzGOO-4Vbj1-RKHHMcBj_Xg41pacvCrkzPyvsP3F04"
+      },
+      "dek_wrapped": "3gjE2YmWch4PLiIZmjqGHg3GfFEoXpUPRQxCHYFxQ8X-5lJFErwLnw",
+      "nonce": "YGTR6yzReLETbZfj",
+      "ciphertext": "drXo3_TJsG7BkySk3Qqs97f4p7q7uVSVN0ZHg4HID9GcJx21QpeWTQAi7uYQ7ObQyXphdvfA-gUArosXYBBZt9z7AxNAJSYzTt-ajOKACyp_wywXI3ThWli5Mg5TaT4EtO7pyGiWntFU7GxiuicedUe2tAnuLXD_vTriakKlAeMvfHl0GIXAi3AwjhiGGkwHPyyZgqGC9BLUPe9umdaRxLARMWnCEdH3KaFMo5cRWSxWevUhwqLfkYaClVZtnaoCtQAtBwYJF6Il9jICtph84SJ1p01-P-x5bS5gBicdaEypyWs-O36fAgw0JbwnauEBcJsI27-_N2WDCt8",
+      "tag": "-Oxp4A1G7x6PJLEvda0haA"
+    },
+    "user": {
+      "epk": {
+        "kty": "OKP",
+        "crv": "X25519",
+        "x": "zaTRGtNUzsl6Z_XdcqGyhXKGKLCBO9yF6dJQ1B1U6Fs"
+      },
+      "dek_wrapped": "5oyz0QjSk7j0sts6xWelHo2JodPUoExeEg0PjTX9gwgSsI9zDAaLjQ",
+      "nonce": "UpkJOKenNZRSPCsW",
+      "ciphertext": "2o88DCcGQ5xTcrg1buEImUM2_AiwIlVPxPbKj8MNS27qgetjJZ2SXyME3bwjxbSKis7Sz8Pu6iMc0PM1UQcHAqM9JAvR9LIB_uosYqaNvvfRxv6UHW4zcX0SE2Ar4sfsJjUxZ7CQfciL114enOJP1NMiYMOTs_oLwN6fKuzNgFJMiRqBR8nF3xP6gPKe_k3UMvzKPNJgQIIqz0YhM7aT-Bf4dNs05OMfYXpyGS_qXKYVrt6BdW5bc3xJ",
+      "tag": "sUa4cYbuKCaHSsvlnjYUhQ"
+    }
+  },
+  "signature": {
+    "alg": "EdDSA",
+    "kid": "issuer-signing-key-1",
+    "signed_fields": [
+      "spec_version",
+      "profile",
+      "package_id",
+      "issued_at",
+      "issuer",
+      "intent",
+      "cnf",
+      "bindings",
+      "manifest"
+    ],
+    "value": "oScStQ_C2dCJup9yR3dBhT6egfNfVEe9XCl-DCfLB-T8FxYH-2ObtC6B3jwNOgAlxO7NY_h5pssTrd0PukTJAg"
+  }
+}
