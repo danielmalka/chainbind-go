@@ -25,7 +25,7 @@ Open an issue before adding one. The current surface is deliberately small:
   canonicalisation). Importing the library pulls in nothing else.
 - The HTTP shell and adapters (`cmd/`, `internal/adapters`) add `github.com/lestrrat-go/jwx/v3` for
   JWT/JWKS. That cost stays out of the library.
-- `github.com/hashicorp/vault/api` is **approved but deliberately unused** (D-014): the Vault signer
+- `github.com/hashicorp/vault/api` is **approved but deliberately unused**: the Vault signer
   speaks Transit over `net/http` directly, so the shell does not inherit Vault's dependency tree. Do
   not add it back.
 
@@ -43,7 +43,7 @@ testing the derivation and the PR is not ready.
 
 ### Secrets, and why the scanner is only a backstop
 
-- **No error string ever carries plaintext, a DEK, or private-key bytes** (invariant 10). Sentinels
+- **No error string ever carries plaintext, a DEK, or private-key bytes.** Sentinels
   are static strings; wrap with `%w`, never format secret bytes into an error.
 - **A published crypto test vector and a leaked private key are the same object to a scanner.** When a
   test needs a real key or a golden vector, exempt it per line with `// gitleaks:allow` — never by
