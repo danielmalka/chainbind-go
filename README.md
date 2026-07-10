@@ -163,7 +163,7 @@ encryption stops a party that holds the package from reading a segment; selectiv
 chooses to withhold. That is verifiable omission, not confidentiality — it cannot keep a holder from
 reading what it was given. Feature 002 would make each opened segment an SD-JWT so its owner can
 forward a subset; it composes *on top of* this format, does not replace it, and is a feature the size
-of this one (decision D-006). Because `disclosures` is inside the signed view, feature 002 can
+of this one. Because `disclosures` is inside the signed view, feature 002 can
 populate it without changing the view's shape or breaking existing verifiers.
 
 ## What is real, what is assumed, what is simulated
@@ -175,7 +175,7 @@ populate it without changing the view's shape or breaking existing verifiers.
 | Vault Transit signer | **Real** integration (dev-mode Vault in compose), talking to Transit over HTTP. |
 | Keycloak JWT/JWKS auth on the shell's seal route | **Real** validation: issuer, audience, `role_issuer_admin`, and structural rejection of `alg:none` / RS→HS confusion. |
 | The intent authority | **Simulated.** `mock-authority` wraps an in-memory verifier seeded from `testdata/`. A production authority is a third-party policy service chainbind does not ship. |
-| `constraints_hash` immutability | **An assumption** chainbind places on that upstream authority (D-012); it cannot enforce it on a third party. |
+| `constraints_hash` immutability | **An assumption** chainbind places on that upstream authority; it cannot enforce it on a third party. |
 | `transaction_id` | **Not a security control** (see below). |
 | The HTTP shell as *the* way to seal | **An organizational choice with a consequence.** Its operator becomes the issuer and reads every payload. Seal with the library in your own process to avoid that. |
 | Single-issuer trust, recipient key distribution | **Assumptions.** Key provisioning is static seed data (PRD A4); a trust list and key discovery are out of scope. |
@@ -191,7 +191,7 @@ idempotency. Treating it as protection is security theatre.
 
 ## Trade-offs
 
-From the STRIDE analysis over the seal/verify/open paths (TECHSPEC §7). The ones that most often
+From the STRIDE analysis over the seal/verify/open paths. The ones that most often
 surprise:
 
 1. **The issuer reads everything, because the issuer seals.** Confidentiality is *between the issuer

@@ -8,12 +8,11 @@ import (
 	"errors"
 )
 
-// IntentResult is the outcome of Level 2 — the authority-backed check
-// (TECHSPEC-001 §6.5). Evaluated reports whether the authority was reached
-// at all; Valid reports whether its answer matched the package's claim.
-// Reason explains a false Valid or a false Evaluated, and — like every
-// string this package produces — never carries a plaintext, a DEK, a key,
-// or a ciphertext byte (architecture invariant 10).
+// IntentResult is the outcome of Level 2 — the authority-backed check.
+// Evaluated reports whether the authority was reached at all; Valid reports
+// whether its answer matched the package's claim. Reason explains a false
+// Valid or a false Evaluated, and — like every string this package produces
+// — never carries a plaintext, a DEK, a key, or a ciphertext byte.
 type IntentResult struct {
 	Evaluated bool
 	Valid     bool
@@ -21,8 +20,8 @@ type IntentResult struct {
 }
 
 // StructuralFault names the single reason Level 1 rejected a package before
-// the signature was checked (TECHSPEC-001 §6.5, L1.1). It is a closed set:
-// no value carries a byte from the package (architecture invariant 10).
+// the signature was checked. It is a closed set: no value carries a byte
+// from the package.
 type StructuralFault uint8
 
 const (
@@ -65,7 +64,7 @@ const (
 
 // String returns a static, constant description of f. Every branch is a
 // string literal — never a formatted package byte — so a Report is always
-// safe to render (architecture invariant 10).
+// safe to render.
 func (f StructuralFault) String() string {
 	switch f {
 	case FaultNone:
@@ -118,7 +117,7 @@ func (f StructuralFault) MarshalJSON() ([]byte, error) {
 // An unrecognised fault string is an error, not silently FaultNone: a body
 // claiming a fault this build does not know is malformed, and turning it into
 // "no fault" would let a garbled Report read as a clean one. The error names
-// no part of the input (invariant 10).
+// no part of the input.
 func (f *StructuralFault) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
@@ -133,8 +132,9 @@ func (f *StructuralFault) UnmarshalJSON(data []byte) error {
 	return errors.New("chainbind: unrecognised structural fault")
 }
 
-// Report is Verify's complete answer: every check TECHSPEC-001 §6.5 defines,
-// each recorded independently so a caller can tell which one failed. A field
+// Report is Verify's complete answer: every check the two-level
+// verification procedure defines, each recorded independently so a caller
+// can tell which one failed. A field
 // left at its zero value after an L1.1/L1.2 abort means "never evaluated",
 // not "passed" — CipherHashes and ProfileBindings are nil maps, not empty
 // ones, precisely so a caller can tell the difference.
@@ -164,8 +164,7 @@ type Report struct {
 // every supplied cipher hash and profile binding matched, and Level 2
 // evaluated the intent authority and found it valid. There is no other path
 // to true — in particular, an unevaluated intent level (a nil or
-// unreachable authority) always makes OK false, never silently true
-// (architecture invariant 5, D-011).
+// unreachable authority) always makes OK false, never silently true.
 func (r *Report) OK() bool {
 	if r == nil {
 		return false
@@ -236,7 +235,7 @@ type VerifyOptions struct {
 	// Intent is the authority Level 2 checks against. A nil Intent means
 	// the caller chose not to, or could not, reach an authority: Level 2
 	// reports the intent level as unevaluated rather than being skipped
-	// silently (architecture invariant 6).
+	// silently.
 	Intent IntentVerifier
 
 	// BindingSpecs are the profile bindings L1.6 recomputes and compares
@@ -244,10 +243,9 @@ type VerifyOptions struct {
 	BindingSpecs []BindingSpec
 }
 
-// Verify checks p against the two-level procedure in TECHSPEC-001 §6.5. It
-// never decrypts, never opens a segment, and never touches a private key
-// (architecture invariant 1) — Level 1 needs only the issuer's public key,
-// and Level 2 needs only a reachable authority.
+// Verify checks p against the two-level procedure. It never decrypts, never
+// opens a segment, and never touches a private key — Level 1 needs only the
+// issuer's public key, and Level 2 needs only a reachable authority.
 //
 // Verify returns a non-nil error only when p cannot be processed at all (a
 // nil package). Every other outcome — an unsupported spec_version, a bad
@@ -263,7 +261,7 @@ func Verify(ctx context.Context, p *Package, opt VerifyOptions) (*Report, error)
 
 	// L1.1 — spec_version and structural parse. Abort on failure: before
 	// the signature, every field is attacker-controlled, and there is
-	// nothing gained by checking further (architecture invariant 3). Verify
+	// nothing gained by checking further. Verify
 	// never propagates these as a Go error — a malformed package is an
 	// answer (an unverified *Report), not a failure to process the
 	// request — so the checks below are boolean/enum-valued, not
@@ -440,9 +438,9 @@ func verifyEd25519(pub ed25519.PublicKey, message, sig []byte) bool {
 }
 
 // checkCipherHash reports whether seg.CipherHash matches H(ciphertext ‖
-// tag) over sealed's raw decoded bytes (TECHSPEC-001 §6.5 L1.4). A malformed
-// base64 encoding is a mismatch, not a separate error class — the report
-// has no field for "unparseable", only "invalid".
+// tag) over sealed's raw decoded bytes. A malformed base64 encoding is a
+// mismatch, not a separate error class — the report has no field for
+// "unparseable", only "invalid".
 func checkCipherHash(seg Segment, sealed SealedSegment) bool {
 	ciphertext, err := base64.RawURLEncoding.DecodeString(sealed.Ciphertext)
 	if err != nil {
@@ -467,7 +465,7 @@ func checkCipherHash(seg Segment, sealed SealedSegment) bool {
 // only the issuer's claim about what the authority said; recomputing the
 // commitment from that claim would compare the issuer's assertion against
 // itself; a forging issuer controls both sides and the check would always
-// pass (architecture invariant 7).
+// pass.
 func verifyIntent(ctx context.Context, p *Package, iv IntentVerifier, report *Report) {
 	if iv == nil {
 		report.Intent = IntentResult{Reason: "intent authority not configured"}

@@ -4,7 +4,7 @@ import "errors"
 
 // Sentinel errors returned by the core. Every message here is a static
 // string: none is ever built from plaintext, a data-encryption key, or
-// private-key bytes (see the security section of TECHSPEC-001 §7). Wrap
+// private-key bytes. Wrap
 // these with fmt.Errorf("...: %w", err) for context; never format secret
 // bytes into an error message.
 var (
@@ -14,11 +14,11 @@ var (
 
 	// ErrMalformedPackage is returned when a package fails structural
 	// validation (missing sections, mismatched segment counts, an invalid
-	// signature.signed_fields set, ...). Verify never returns this: since
-	// TASK-001-16, a structurally malformed package is reported through
+	// signature.signed_fields set, ...). Verify never returns this: a
+	// structurally malformed package is reported through
 	// Report.Structural, a StructuralFault, with a nil error — the same
-	// contract every other Verify outcome follows (architecture invariant
-	// 3). This error still reaches callers who go around Verify: SegmentsRoot
+	// contract every other Verify outcome follows. This error still reaches
+	// callers who go around Verify: SegmentsRoot
 	// and checkSignedFields return it directly to their own callers, and
 	// ReconstructSigningView is exported, so a caller reconstructing a
 	// signing view directly (rather than through Verify) still sees it.
@@ -43,7 +43,7 @@ var (
 	// ErrIntentDenied is returned by Seal when the authority reports the
 	// execution falls outside the referenced authorization. Callers wrap
 	// it with the authority's own reason, which is the caller's own
-	// authorization data and not another party's (PRD Story 2 AC-2).
+	// authorization data and not another party's.
 	ErrIntentDenied = errors.New("chainbind: intent denied by authority")
 
 	// ErrIntentInvalid is returned when the intent authority rejects the
@@ -71,6 +71,6 @@ var (
 
 	// ErrIntegrityCheckFailed is returned by Open when Verify's Level 1
 	// checks do not all pass. Open does not unwrap a data key or touch a
-	// ciphertext in that case (PRD Story 4 AC-1, AC-6).
+	// ciphertext in that case.
 	ErrIntegrityCheckFailed = errors.New("chainbind: open: integrity check failed")
 )

@@ -6,15 +6,15 @@ import "fmt"
 // to. The struct (not a map) is what makes the JSON key order predictable
 // without relying on json.Marshal's map-key sort, and audience naming keeps
 // the position of each entry driven by manifest.segment_order rather than
-// by insertion order into plainHash (TECHSPEC-001 §6.1).
+// by insertion order into plainHash.
 type segmentRootEntry struct {
 	Audience  string `json:"audience"`
 	PlainHash string `json:"plain_hash"`
 }
 
 // SegmentsRoot computes segments_root = H(JCS([{"audience": a, "plain_hash":
-// plain_hash[a]} for a in segmentOrder])) per TECHSPEC-001 §6.1. The result
-// commits to both which segments exist and the order they are listed in:
+// plain_hash[a]} for a in segmentOrder])). The result commits to both which
+// segments exist and the order they are listed in:
 // permuting segmentOrder with identical hashes changes the value.
 //
 // segmentOrder and plainHash must describe exactly the same set of
@@ -26,9 +26,9 @@ type segmentRootEntry struct {
 // root — a segment nothing commits to. Both are malformed input, and neither
 // is this function's to paper over.
 //
-// TECHSPEC-001 §6.5 L1.1 also checks the manifest for one entry per declared
-// segment. That check and this one are independent, and this function does
-// not rely on it having run.
+// Verify's structural parse also checks the manifest for one entry per
+// declared segment. That check and this one are independent, and this
+// function does not rely on it having run.
 func SegmentsRoot(segmentOrder []string, plainHash map[string]string) (string, error) {
 	entries := make([]segmentRootEntry, 0, len(segmentOrder))
 	seen := make(map[string]struct{}, len(segmentOrder))
@@ -60,8 +60,8 @@ func SegmentsRoot(segmentOrder []string, plainHash map[string]string) (string, e
 }
 
 // intentCommitmentInput is the object intent_commitment hashes over. Field
-// names match the wire vocabulary in TECHSPEC-001 §6.1, not Go convention,
-// because they are part of what gets canonicalized and signed.
+// names match the wire vocabulary, not Go convention, because they are part
+// of what gets canonicalized and signed.
 type intentCommitmentInput struct {
 	IntentRef       string `json:"intent_ref"`
 	ConstraintsHash string `json:"constraints_hash"`
@@ -69,12 +69,11 @@ type intentCommitmentInput struct {
 }
 
 // IntentCommitment computes intent_commitment = "ctx:" + H(JCS({intent_ref,
-// constraints_hash, segments_root})) per TECHSPEC-001 §6.1 and D-008. The
-// "ctx:" literal is prepended in front of the "sha256:" prefix H already
-// adds, so the result begins "ctx:sha256:". It changes independently for
-// each of its three inputs, which is what lets a keyless verifier detect
-// each of the three attacks in D-008's table (payload swap, authorization
-// swap, constraints mutated after sealing).
+// constraints_hash, segments_root})). The "ctx:" literal is prepended in
+// front of the "sha256:" prefix H already adds, so the result begins
+// "ctx:sha256:". It changes independently for each of its three inputs,
+// which is what lets a keyless verifier detect each of three attacks:
+// payload swap, authorization swap, and constraints mutated after sealing.
 func IntentCommitment(intentRef, constraintsHash, segmentsRoot string) (string, error) {
 	canon, err := JCS(intentCommitmentInput{
 		IntentRef:       intentRef,
@@ -89,7 +88,7 @@ func IntentCommitment(intentRef, constraintsHash, segmentsRoot string) (string, 
 
 // BindingContext carries the core values a profile-supplied binding may
 // need to compute its own commitment, without the core knowing what the
-// binding means (D-004, PRD Story 5 AC-2). The core populates this once per
+// binding means. The core populates this once per
 // Seal/Verify call; a BindingSpec reads whichever fields its formula needs.
 type BindingContext struct {
 	PlainHash       map[string]string

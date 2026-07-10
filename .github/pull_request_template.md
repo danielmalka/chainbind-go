@@ -2,7 +2,7 @@
 
 ## Which invariant does this touch
 
-Name the security invariant or decision (D-0xx) affected, or "none".
+Name the security invariant or decision affected, or "none".
 
 ## The mutation that proves the test bites
 

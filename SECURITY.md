@@ -34,16 +34,16 @@ be closed with a pointer back here. If you think the *design* is wrong, that is 
 vulnerability.
 
 - **The issuer reads everything.** The issuer seals, so it holds every segment's plaintext before it
-  is encrypted (D-002). Sealing through the HTTP shell makes *its operator* the issuer. Confidentiality
+  is encrypted. Sealing through the HTTP shell makes *its operator* the issuer. Confidentiality
   is between recipients, never from the issuer.
-- **`transaction_id` is not a security control.** It is a derivation, not an equality check (D-007);
+- **`transaction_id` is not a security control.** It is a derivation, not an equality check;
   both of its inputs already sit in the signed manifest, so it adds no integrity a verifier does not
   already have.
 - **A keyless verifier never checks `plain_hash`.** It cannot — that needs the plaintext. Only `Open`
   holds the plaintext and only `Open` checks it. `Verify` returning success does not attest the
   plaintext.
 - **`constraints_hash` immutability is a requirement chainbind places on its upstream Intent
-  Authority (D-012), not something chainbind enforces on a third party.** If the authority mints a
+  Authority, not something chainbind enforces on a third party.** If the authority mints a
   mutable or re-used hash, that is the authority's break, not chainbind's.
 - **The POC substitutes are not hardened.** The mock authority, the HTTP shell, the CLI's on-disk key
   files, and the Docker Compose environment exist to demonstrate the flow. They are not the reference
