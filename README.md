@@ -1,11 +1,17 @@
 # chainbind-go
 
+[![CI](https://github.com/danielmalka/chainbind-go/actions/workflows/ci.yml/badge.svg)](https://github.com/danielmalka/chainbind-go/actions/workflows/ci.yml)
+[![Security](https://github.com/danielmalka/chainbind-go/actions/workflows/security.yml/badge.svg)](https://github.com/danielmalka/chainbind-go/actions/workflows/security.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/danielmalka/chainbind-go.svg)](https://pkg.go.dev/github.com/danielmalka/chainbind-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/danielmalka/chainbind-go)](https://goreportcard.com/report/github.com/danielmalka/chainbind-go)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+![Go Version](https://img.shields.io/github/go-mod/go-version/danielmalka/chainbind-go)
+
 Seal one payload into per-audience encrypted segments, each openable by exactly one recipient,
 verifiable by anyone holding no key, and bound to the authorization it was issued under.
 
-chainbind generalizes the [Verifiable Intent](https://verifiableintent.dev) flow beyond agentic
-commerce. The core library carries no domain vocabulary; the checkout case is one profile built on
-top of it.
+chainbind generalizes the flow of encrypted payloads and signed claims. The core library carries no
+domain-specific vocabulary; the checkout case is one profile built on top of it.
 
 > **Status: proof of concept.** This repository demonstrates a design. Read the
 > [What is real, what is assumed, what is simulated](#what-is-real-what-is-assumed-what-is-simulated)

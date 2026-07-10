@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest a change to chainbind's API or behavior
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        chainbind's core stays generic — no domain vocabulary; profiles carry that.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-change
+    attributes:
+      label: Proposed change
+    validations:
+      required: true
+  - type: textarea
+    id: dependency-or-api
+    attributes:
+      label: "Does this add a dependency or a new public API? "
+      description: New dependencies must be discussed first.
+    validations:
+      required: false
