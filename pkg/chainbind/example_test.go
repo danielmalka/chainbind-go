@@ -15,8 +15,8 @@ import (
 
 // allowAll is a stand-in IntentVerifier for the example: it approves every
 // execution and reports a fixed constraints hash. A real deployment supplies
-// an authority the issuer does not control (see D-005 / D-011); Seal fails
-// closed if that authority is unreachable.
+// an authority the issuer does not control; Seal fails closed if that
+// authority is unreachable.
 type allowAll struct{}
 
 func (allowAll) Check(context.Context, string, any) (chainbind.IntentDecision, error) {

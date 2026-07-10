@@ -8,7 +8,7 @@ import (
 
 // SupportedSpecVersion is the only package format version this build
 // understands. Seal stamps it; Verify refuses anything else at its first
-// gate (PRD Story 1 AC-6, TECHSPEC-001 §6.5 L1.1).
+// gate.
 const SupportedSpecVersion = "1.0.0"
 
 // CheckSpecVersion reports ErrUnsupportedSpecVersion if v is not the
@@ -60,15 +60,13 @@ type KeyConfirmation struct {
 }
 
 // CNF maps an arbitrary, caller-supplied audience name to its key
-// confirmation. The core places no restriction on the names used here
-// (PRD Story 5 AC-1, D-004).
+// confirmation. The core places no restriction on the names used here.
 type CNF map[string]KeyConfirmation
 
 // Bindings carries the two core, data-driven commitments every package
-// signs: segments_root and intent_commitment (TECHSPEC-001 §6.1). A profile
-// may attach further named aliases; those ride in Extra and are flattened
-// into the same JSON object on the wire, so the core never has to name them
-// (D-004).
+// signs: segments_root and intent_commitment. A profile may attach further
+// named aliases; those ride in Extra and are flattened into the same JSON
+// object on the wire, so the core never has to name them.
 type Bindings struct {
 	SegmentsRoot     string
 	IntentCommitment string
@@ -129,7 +127,7 @@ func (b *Bindings) UnmarshalJSON(data []byte) error {
 }
 
 // AADContext is the caller-supplied part of the additional authenticated
-// data every segment's AES-256-GCM seal is bound to (TECHSPEC-001 §6.3).
+// data every segment's AES-256-GCM seal is bound to.
 type AADContext struct {
 	PackageID   string `json:"package_id"`
 	TenantID    string `json:"tenant_id"`
@@ -157,14 +155,14 @@ type Manifest struct {
 	AADContext       AADContext         `json:"aad_context"`
 	Segments         map[string]Segment `json:"segments"`
 	// Disclosures is an empty region owned by feature 002. It already
-	// lives inside the signed view (D-006) so a later feature can
-	// populate it without changing the view's shape or breaking existing
-	// verifiers. It always serializes as [], never null.
+	// lives inside the signed view so a later feature can populate it
+	// without changing the view's shape or breaking existing verifiers.
+	// It always serializes as [], never null.
 	Disclosures []any `json:"disclosures"`
 }
 
 // MarshalJSON defaults Disclosures to [] so a zero-value Manifest still
-// serializes the D-006 empty region correctly.
+// serializes the empty region correctly.
 func (m Manifest) MarshalJSON() ([]byte, error) {
 	type alias Manifest
 	a := alias(m)
@@ -197,7 +195,7 @@ type SealedSegment struct {
 }
 
 // Signature is the issuer's Ed25519 signature over the signing view built
-// from the fields named in SignedFields (TECHSPEC-001 §6.4).
+// from the fields named in SignedFields.
 type Signature struct {
 	Alg          string   `json:"alg"`
 	Kid          string   `json:"kid"`

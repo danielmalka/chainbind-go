@@ -5,8 +5,8 @@ import (
 	"fmt"
 )
 
-// RequiredSignedFields are the nine field names TECHSPEC-001 §6.4 defines
-// for this spec version's signing view, in the order stated there:
+// RequiredSignedFields are the nine field names that make up this spec
+// version's signing view, in this order:
 //
 //	signing_view = JCS({spec_version, profile, package_id, issued_at,
 //	                    issuer, intent, cnf, bindings, manifest})
@@ -24,7 +24,7 @@ var RequiredSignedFields = []string{
 // and ReconstructSigningView reach into Package, so adding a signed field
 // later is one map entry instead of two. segments is deliberately absent:
 // the ciphertexts are covered only transitively through
-// manifest.segments[a].cipher_hash (architecture invariant 2).
+// manifest.segments[a].cipher_hash.
 func signingViewFields(p Package) map[string]any {
 	return map[string]any{
 		"spec_version": p.SpecVersion,
@@ -40,7 +40,7 @@ func signingViewFields(p Package) map[string]any {
 }
 
 // BuildSigningView builds the canonical signing view for p: JCS over
-// exactly the nine fields TECHSPEC-001 §6.4 names. Callers sign the
+// exactly the nine fields the signing view names. Callers sign the
 // returned bytes with a Signer and stamp RequiredSignedFields into
 // signature.signed_fields (Seal, a later task).
 func BuildSigningView(p Package) ([]byte, error) {
@@ -54,7 +54,7 @@ func BuildSigningView(p Package) ([]byte, error) {
 
 // ReconstructSigningView rebuilds the signing view a verifier checks a
 // signature against. It is driven by p.Signature.SignedFields, not by a
-// hardcoded list (TECHSPEC-001 §6.5 L1.2), but it first rejects any
+// hardcoded list, but it first rejects any
 // signed_fields that is not exactly the nine required names in some order:
 // one missing, one repeated, or one unrecognised. Without that check an
 // attacker could drop a name (e.g. bindings) from signed_fields and the
@@ -112,7 +112,7 @@ func selectFields(fields map[string]any, names []string) map[string]any {
 }
 
 // EncodeSignatureValue encodes an Ed25519 signature as base64url, unpadded
-// (RFC 4648 §5), matching JOSE and TECHSPEC-001 §6.4's
+// (RFC 4648 §5), matching JOSE's
 // signature.value = base64url(Ed25519.Sign(issuer_sk, signing_view)).
 func EncodeSignatureValue(sig []byte) string {
 	return base64.RawURLEncoding.EncodeToString(sig)

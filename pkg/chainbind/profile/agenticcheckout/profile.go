@@ -1,5 +1,5 @@
 // Package agenticcheckout implements the agentic-checkout/v1 profile on top
-// of chainbind's domain-free core (D-004). Every checkout-specific name —
+// of chainbind's domain-free core. Every checkout-specific name —
 // user, merchant, gateway, checkout, payment, transaction, subject — lives in
 // this package alone; the core knows only opaque audience names and
 // data-driven bindings.
@@ -18,16 +18,16 @@ import (
 const Name = "agentic-checkout/v1"
 
 // Audience names this profile splits a Payload into. The core places no
-// meaning on these beyond using them as map/manifest keys (D-004); they are
-// this profile's own vocabulary.
+// meaning on these beyond using them as map/manifest keys; they are this
+// profile's own vocabulary.
 const (
 	AudienceUser     = "user"
 	AudienceMerchant = "merchant"
 	AudienceGateway  = "gateway"
 )
 
-// Sentinel errors. Static strings only (architecture invariant 10): never a
-// payload value, a hash, a key, or a length.
+// Sentinel errors. Static strings only: never a payload value, a hash, a
+// key, or a length.
 var (
 	// ErrUnsupportedPayload is returned by Split and Project when payload
 	// is neither a Payload nor a *Payload.
@@ -105,9 +105,9 @@ type Payment struct {
 	Amount            int64  `json:"amount"`
 }
 
-// Payload is the agentic-checkout/v1 shape (docs/payload-example.json). Per
-// PRD §6 assumption A3, its three business sections — Subject, Checkout,
-// Payment — map one-to-one onto the three audiences: no field belongs to
+// Payload is the agentic-checkout/v1 shape (docs/payload-example.json). Its
+// three business sections — Subject, Checkout, Payment — map one-to-one
+// onto the three audiences: no field belongs to
 // two. RequestContext and Intent are envelope metadata, not segment
 // material: they feed the SealRequest fields the core itself already
 // understands (TenantID, Environment, IntentRef, Authority), never a
@@ -120,8 +120,8 @@ type Payload struct {
 	Payment        Payment        `json:"payment"`
 }
 
-// Projection is what Seal sends to the intent authority (D-009): only the
-// fields policy needs, never the payload. No timestamp is projected,
+// Projection is what Seal sends to the intent authority: only the fields
+// policy needs, never the payload. No timestamp is projected,
 // deliberately — this profile's Payload carries none. A deployment that
 // binds time-based constraints (recurrence, budget windows) must add an
 // issued_at field to Payload and project it here; its absence today is not
@@ -160,7 +160,7 @@ func asPayload(payload any) (Payload, error) {
 }
 
 // Split implements chainbind.Profile. It maps Payload's three business
-// sections one-to-one onto the three audiences (A3): user <- Subject,
+// sections one-to-one onto the three audiences: user <- Subject,
 // merchant <- Checkout, gateway <- Payment. request_context and intent are
 // envelope metadata, not segment material, and never appear here.
 //
@@ -195,8 +195,8 @@ func (Profile) Split(payload any) (map[string][]byte, error) {
 }
 
 // Project implements chainbind.Profile. It returns exactly the three fields
-// the intent authority's policy needs (D-009) — never the payload, never
-// more than these three.
+// the intent authority's policy needs — never the payload, never more than
+// these three.
 func (Profile) Project(payload any) (any, error) {
 	p, err := asPayload(payload)
 	if err != nil {
@@ -240,10 +240,10 @@ func computeCheckoutHash(bctx chainbind.BindingContext) (string, error) {
 }
 
 // computeTransactionID computes transaction_id = "txn:" +
-// H(JCS({checkout_hash, gateway_plain_hash})) (TECHSPEC-001 §6.1).
+// H(JCS({checkout_hash, gateway_plain_hash})).
 //
-// TECHSPEC-001 §6.2 / D-007: transaction_id is not a security control. Both
-// of its inputs — checkout_hash (an alias of the merchant segment's
+// transaction_id is not a security control. Both of its inputs —
+// checkout_hash (an alias of the merchant segment's
 // plain_hash) and the gateway segment's plain_hash — already sit inside the
 // signed manifest, so any verifier recomputes it holding no key and opening
 // nothing; it adds no evidence the signature did not already provide. It
@@ -270,7 +270,7 @@ func computeTransactionID(bctx chainbind.BindingContext) (string, error) {
 	return "txn:" + chainbind.H(canon), nil
 }
 
-// computeConditionalTransactionID aliases intent_commitment (D-008): it
+// computeConditionalTransactionID aliases intent_commitment: it
 // recomputes chainbind.IntentCommitment from BindingContext's own
 // IntentRef/ConstraintsHash/SegmentsRoot rather than reading
 // bindings.intent_commitment, which BindingContext does not carry.
