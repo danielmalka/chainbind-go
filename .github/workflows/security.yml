@@ -1,0 +1,20 @@
+name: security
+on:
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1'
+jobs:
+  govulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go install golang.org/x/vuln/cmd/govulncheck@latest
+      # govulncheck re-derives reachability per commit: a dependency unreachable
+      # yesterday can block a build today. That already happened here once —
+      # GO-2026-5856 (crypto/tls ECH) became reachable the moment the HTTP intent
+      # adapter landed.
+      - run: govulncheck ./...

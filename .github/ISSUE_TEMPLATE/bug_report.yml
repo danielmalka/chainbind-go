@@ -1,0 +1,39 @@
+name: Bug report
+description: Report a defect in pkg/chainbind or the tooling
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Found a security vulnerability? Do not file it here — see SECURITY.md for private reporting.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: reproducer
+    attributes:
+      label: Reproducer
+      description: A minimal Go test or CLI invocation against pkg/chainbind that reproduces the issue.
+    validations:
+      required: true
+  - type: input
+    id: commit-sha
+    attributes:
+      label: Commit SHA
+    validations:
+      required: true
+  - type: input
+    id: go-version
+    attributes:
+      label: Go version
+    validations:
+      required: true
+  - type: textarea
+    id: invariant
+    attributes:
+      label: Which invariant do you believe breaks
+    validations:
+      required: false

@@ -1,0 +1,16 @@
+name: Documentation
+description: Report a problem in the docs
+labels: ["documentation"]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Which file/section
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing
+    validations:
+      required: true
