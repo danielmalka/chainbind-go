@@ -5,7 +5,7 @@ go 1.26
 toolchain go1.26.7
 
 require (
-	github.com/gowebpki/jcs v1.0.1
+	github.com/gowebpki/jcs v1.0.2
 	github.com/lestrrat-go/jwx/v3 v3.3.0
 )
 
