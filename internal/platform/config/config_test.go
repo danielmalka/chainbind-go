@@ -136,6 +136,26 @@ func TestLoad_HTTPAddr_DefaultAndOverride(t *testing.T) {
 // anything logged through it. Without LogValue, slog would reflect every
 // exported field of *Config, token included — this test fails the moment
 // that redaction is removed or bypassed.
+func TestLoad_HTTPAddr_InvalidRejected(t *testing.T) {
+	for _, bad := range []string{"8080", "localhost", "host:port:extra"} {
+		t.Run(bad, func(t *testing.T) {
+			setAll(t)
+			t.Setenv("CHAINBIND_HTTP_ADDR", bad)
+
+			_, err := Load()
+			if err == nil {
+				t.Fatalf("Load with CHAINBIND_HTTP_ADDR=%q: got nil error, want one", bad)
+			}
+			if errors.Is(err, ErrMissingConfig) {
+				t.Fatalf("Load error = %v, must not be ErrMissingConfig", err)
+			}
+			if !strings.Contains(err.Error(), "CHAINBIND_HTTP_ADDR") {
+				t.Fatalf("Load error %q does not name CHAINBIND_HTTP_ADDR", err.Error())
+			}
+		})
+	}
+}
+
 func TestConfig_LogValueRedactsToken(t *testing.T) {
 	const distinctiveToken = "s.super-secret-vault-token-value"
 	cfg := &Config{
