@@ -113,7 +113,7 @@ func Load() (*Config, error) {
 	var missing []string
 	for _, spec := range required {
 		v := os.Getenv(spec.name)
-		if v == "" {
+		if strings.TrimSpace(v) == "" {
 			missing = append(missing, spec.name)
 			continue
 		}
