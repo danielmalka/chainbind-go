@@ -111,6 +111,21 @@ func TestLoad_OneMissingRequired_Errors(t *testing.T) {
 	}
 }
 
+// TestLoad_WhitespaceOnlyRequired_Errors proves a required var holding only
+// whitespace is reported as missing, the same as an unset one.
+func TestLoad_WhitespaceOnlyRequired_Errors(t *testing.T) {
+	setAll(t)
+	t.Setenv("CHAINBIND_VAULT_ADDR", "   ")
+
+	_, err := Load()
+	if !errors.Is(err, ErrMissingConfig) {
+		t.Fatalf("Load error = %v, want errors.Is ErrMissingConfig", err)
+	}
+	if !strings.Contains(err.Error(), "CHAINBIND_VAULT_ADDR") {
+		t.Fatalf("Load error %q does not name CHAINBIND_VAULT_ADDR", err.Error())
+	}
+}
+
 func TestLoad_HTTPAddr_DefaultAndOverride(t *testing.T) {
 	setAll(t)
 

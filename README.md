@@ -246,6 +246,25 @@ chainbind open   --package package.json --key alice.key --issuer-key issuer.pub
 `chainbind verify` exits non-zero — and says the intent level was not evaluated — if you omit the
 authority. It never prints success for a structural-only check.
 
+## Configuration
+
+The HTTP shell (`cmd/chainbind-api`) reads its configuration from environment variables only. Every
+variable below is read by `Load` in `internal/platform/config/config.go`. A missing required variable
+stops startup and is reported by name, all at once.
+
+| Variable | Required | Default | Purpose |
+|---|---|---|---|
+| `CHAINBIND_VAULT_ADDR` | yes | — | Base URL of the Vault server used by the Transit signer. |
+| `CHAINBIND_VAULT_TOKEN` | yes | — | Vault token. **Secret: must never be committed or logged.** It is redacted in logs and never placed in error strings. |
+| `CHAINBIND_VAULT_TRANSIT_KEY` | yes | — | Name of the Transit key the issuer signs with. |
+| `CHAINBIND_ISSUER_ID` | yes | — | Identity stamped into `issuer.iss` on every sealed package. |
+| `CHAINBIND_INTENT_AUTHORITY_URL` | yes | — | Base URL of the intent authority. `Seal` fails closed without it. |
+| `CHAINBIND_KEYCLOAK_ISSUER` | yes | — | Expected `iss` claim on tokens the shell accepts. |
+| `CHAINBIND_KEYCLOAK_JWKS_URL` | yes | — | URL from which the shell fetches Keycloak's signing keys. |
+| `CHAINBIND_KEYCLOAK_AUDIENCE` | yes | — | Expected `aud` claim on tokens the shell accepts. |
+| `CHAINBIND_AUDIENCES_FILE` | yes | — | JSON file seeding the audiences a seal request may address. |
+| `CHAINBIND_HTTP_ADDR` | no | `:8080` | Listen address of the shell. |
+
 ## Layout
 
 ```
