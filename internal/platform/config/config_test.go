@@ -132,10 +132,6 @@ func TestLoad_HTTPAddr_DefaultAndOverride(t *testing.T) {
 	}
 }
 
-// TestConfig_LogValueRedactsToken proves LogValue keeps VaultToken out of
-// anything logged through it. Without LogValue, slog would reflect every
-// exported field of *Config, token included — this test fails the moment
-// that redaction is removed or bypassed.
 func TestLoad_HTTPAddr_InvalidRejected(t *testing.T) {
 	for _, bad := range []string{"8080", "localhost", "host:port:extra"} {
 		t.Run(bad, func(t *testing.T) {
@@ -156,6 +152,10 @@ func TestLoad_HTTPAddr_InvalidRejected(t *testing.T) {
 	}
 }
 
+// TestConfig_LogValueRedactsToken proves LogValue keeps VaultToken out of
+// anything logged through it. Without LogValue, slog would reflect every
+// exported field of *Config, token included — this test fails the moment
+// that redaction is removed or bypassed.
 func TestConfig_LogValueRedactsToken(t *testing.T) {
 	const distinctiveToken = "s.super-secret-vault-token-value"
 	cfg := &Config{
