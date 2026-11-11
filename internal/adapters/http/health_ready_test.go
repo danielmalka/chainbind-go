@@ -75,6 +75,21 @@ func TestReadyHandler_AuthorityDown_503(t *testing.T) {
 	assertReadyBodyNamesDependencyNoURL(t, rec, "intent-authority")
 }
 
+func TestReadyHandler_ProblemResponseNoStore(t *testing.T) {
+	h := readyTestServer(errors.New("down"), nil)
+
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/ready", http.NoBody))
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want 503", rec.Code)
+	}
+	assertProblemContentType(t, rec)
+	if got := rec.Header().Get("Cache-Control"); got != "no-store" {
+		t.Fatalf("Cache-Control = %q, want %q", got, "no-store")
+	}
+}
+
 func assertReadyBodyNamesDependencyNoURL(t *testing.T, rec *httptest.ResponseRecorder, wantLabel string) {
 	t.Helper()
 	assertProblemContentType(t, rec)

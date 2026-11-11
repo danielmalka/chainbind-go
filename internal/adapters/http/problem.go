@@ -50,6 +50,7 @@ type problem struct {
 // see the package doc and problem's own comment.
 func writeProblem(w http.ResponseWriter, status int, typ, title, detail string) {
 	w.Header().Set("Content-Type", problemContentType)
+	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(problem{Type: typ, Title: title, Status: status, Detail: detail})
 }
