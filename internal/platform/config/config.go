@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"os"
 	"strings"
 )
@@ -123,6 +124,8 @@ func Load() (*Config, error) {
 	cfg.HTTPAddr = os.Getenv("CHAINBIND_HTTP_ADDR")
 	if cfg.HTTPAddr == "" {
 		cfg.HTTPAddr = defaultHTTPAddr
+	} else if _, _, err := net.SplitHostPort(cfg.HTTPAddr); err != nil {
+		return nil, fmt.Errorf("config: CHAINBIND_HTTP_ADDR must be host:port: %w", err)
 	}
 
 	if len(missing) > 0 {
